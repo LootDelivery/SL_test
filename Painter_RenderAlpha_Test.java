@@ -1,9 +1,10 @@
 // EXPERIMENTAL ACTIVE-RENDER-INSTANCE FINDER
 // TEST ONLY: rename to Painter.java in the SLRR script source folder, compile, and back up the existing Painter first.
-// Clicking a part performs a read-only scan of its ResourceRef parent/child graph.
-// It lists INSTANCE_RENDER (type 3) nodes and marks any whose RenderRef.getTypeID() matches Part.getRenderType().
-// It deliberately creates no RenderRef instances and modifies no colors, render types, or SCX files.
-// This is a diagnostic probe to determine whether the live render instance is reachable from Java.
+// Clicking a part scans its ResourceRef graph for the existing INSTANCE_RENDER (type 3)
+// whose RenderRef.getTypeID() matches Part.getRenderType().
+// It then tests setColor on that existing instance: opaque magenta on first click,
+// neutral white on the next click. No SCX files or Part render-type IDs are changed.
+// RenderRef exposes no color getter, so white is a neutral reset, not a guaranteed exact restore.
 package java.game;
 
 import java.io.*;
@@ -1736,7 +1737,7 @@ public class Painter extends GameType implements GameState
 		alphaTestPartId = 0;
 	}
 
-	// Read-only scan for existing render-instance handles related to this part.
+	// Find the existing render-instance handle and test setColor on that live instance.
 	void toggleRenderAlphaTest(GameRef target)
 	{
 		if (!target)
