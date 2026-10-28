@@ -1,10 +1,9 @@
-// EXPERIMENTAL LIVE RENDER-INSTANCE DIAGNOSTIC BUILD
+// EXPERIMENTAL ACTIVE-RENDER-INSTANCE FINDER
 // TEST ONLY: rename to Painter.java in the SLRR script source folder, compile, and back up the existing Painter first.
-// In Paint Part mode, clicking a part creates a temporary render instance using that part's render type,
-// tints the instance opaque magenta, and asks the parent to render it.
-// This tests RenderRef instance coloring independently of Part.setRenderType and alpha blending.
-// Clicking the same part again destroys the diagnostic instance. Leaving Painter also attempts cleanup.
-// This does NOT edit SCX files and does NOT paint parts. It is not yet the transparency test.
+// Clicking a part performs a read-only scan of its ResourceRef parent/child graph.
+// It lists INSTANCE_RENDER (type 3) nodes and marks any whose RenderRef.getTypeID() matches Part.getRenderType().
+// It deliberately creates no RenderRef instances and modifies no colors, render types, or SCX files.
+// This is a diagnostic probe to determine whether the live render instance is reachable from Java.
 package java.game;
 
 import java.io.*;
@@ -1698,7 +1697,7 @@ public class Painter extends GameType implements GameState
 		alphaTestPartId = 0;
 	}
 
-	// In Paint Part mode, create a temporary visible render instance as a diagnostic.
+	// Read-only scan for existing render-instance handles related to this part.
 	void toggleRenderAlphaTest(GameRef target)
 	{
 		if (!target)
@@ -1710,45 +1709,56 @@ public class Painter extends GameType implements GameState
 		Object scriptInstance = target.getScriptInstance();
 		if (!(scriptInstance instanceof Part))
 		{
-			infoline.changeText("Render instance test: target has no Part script instance");
+			infoline.changeText("Render probe: target has no Part script instance");
 			return;
 		}
 
 		Part selected = (Part)scriptInstance;
-		int selectedID = selected.id();
+		int targetID = target.id();
+		int targetKind = target.type();
+		int partRenderID = selected.getRenderType();
 
-		// Clicking the currently tested part again removes the diagnostic instance.
-		if (alphaTestPart && selectedID == alphaTestPartId)
+		String info = "Render probe: part=" + targetID
+			+ " kind=" + targetKind + " renderType=" + partRenderID;
+		int liveCount = 0;
+		int matchCount = 0;
+
+		// Check the target and then a few ancestors, scanning each node's children.
+		ResourceRef base = target;
+		for (int depth = 0; base && depth < 5 && info.length() < 650; depth++)
 		{
-			restoreRenderAlphaTest();
-			infoline.changeText("Render instance test: removed overlay for part " + selectedID);
-			return;
+			info += " | N" + base.id() + "/T" + base.type();
+
+			ResourceRef child = base.getFirstChild();
+			for (int i = 0; child && i < 48 && info.length() < 650; i++)
+			{
+				int childID = child.id();
+				int childKind = child.type();
+
+				if (childKind == 3)
+				{
+					RenderRef live = new RenderRef(childID);
+					int liveTypeID = live.getTypeID();
+					liveCount++;
+					if (liveTypeID == partRenderID)
+					{
+						matchCount++;
+						info += " MATCH#" + childID + "->" + liveTypeID;
+					}
+					else
+					{
+						info += " R#" + childID + "->" + liveTypeID;
+					}
+				}
+
+				child = child.getNextChild();
+			}
+
+			base = base.getParent();
 		}
 
-		restoreRenderAlphaTest();
-
-		int originalRender = selected.getRenderType();
-		if (!originalRender)
-		{
-			infoline.changeText("Render instance test: part " + selectedID + " has no render type");
-			return;
-		}
-
-		// Resource type 14 is the render type/template. This constructor creates
-		// a type-3 render instance parented to the clicked part.
-		RenderRef overlay = new RenderRef(target, originalRender, "render alpha diagnostic");
-		overlay.setColor(0xFFFF00FF);
-		target.queueEvent(null, GameType.EVENT_COMMAND, "render " + overlay.id());
-
-		alphaTestPart = selected;
-		alphaTestSource = null;
-		alphaTestCopy = overlay;
-		alphaTestOriginalRender = originalRender;
-		alphaTestPartId = selectedID;
-
-		infoline.changeText("Render instance test: part " + selectedID
-			+ ", type " + originalRender + ", instance " + overlay.id()
-			+ " (opaque magenta)");
+		info += " | renderInstances=" + liveCount + " matches=" + matchCount;
+		infoline.changeText(info);
 	}
 
 	public void beginPaint( int cursor_id )
