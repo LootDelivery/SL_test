@@ -1719,19 +1719,22 @@ public class Painter extends GameType implements GameState
 		int partRenderID = selected.getRenderType();
 
 		String info = "Render probe: part=" + targetID
-			+ " kind=" + targetKind + " renderType=" + partRenderID;
+			+ " kind=" + targetKind + " partRT=" + partRenderID;
+		String matches = "";
+		String candidates = "";
 		int liveCount = 0;
 		int matchCount = 0;
+		int nodesScanned = 0;
 
-		// Check the target and then a few ancestors, scanning each node and its children.
+		// Inspect the target and a few ancestors, checking each node and its children.
+		// This is read-only: no render resources are created or modified.
 		ResourceRef base = target;
-		for (int depth = 0; base && depth < 5 && info.length() < 650; depth++)
+		for (int depth = 0; base && depth < 5; depth++)
 		{
 			int baseID = base.id();
 			int baseKind = base.type();
-			info += " | N" + baseID + "/T" + baseKind;
+			nodesScanned++;
 
-			// A render instance may itself be an ancestor of the clicked GameRef.
 			if (baseKind == 3)
 			{
 				RenderRef liveBase = new RenderRef(baseID);
@@ -1740,33 +1743,35 @@ public class Painter extends GameType implements GameState
 				if (liveBaseTypeID == partRenderID)
 				{
 					matchCount++;
-					info += " MATCH#" + baseID + "->" + liveBaseTypeID;
+					if (matches.length() < 160)
+						matches += " #" + baseID + "->" + liveBaseTypeID;
 				}
-				else
+				else if (candidates.length() < 100)
 				{
-					info += " R#" + baseID + "->" + liveBaseTypeID;
+					candidates += " #" + baseID + "->" + liveBaseTypeID;
 				}
 			}
 
 			ResourceRef child = base.getFirstChild();
-			for (int i = 0; child && i < 48 && info.length() < 650; i++)
+			for (int i = 0; child && i < 48; i++)
 			{
 				int childID = child.id();
 				int childKind = child.type();
 
 				if (childKind == 3)
 				{
-					RenderRef live = new RenderRef(childID);
-					int liveTypeID = live.getTypeID();
+					RenderRef liveChild = new RenderRef(childID);
+					int liveTypeID = liveChild.getTypeID();
 					liveCount++;
 					if (liveTypeID == partRenderID)
 					{
 						matchCount++;
-						info += " MATCH#" + childID + "->" + liveTypeID;
+						if (matches.length() < 160)
+							matches += " #" + childID + "->" + liveTypeID;
 					}
-					else
+					else if (candidates.length() < 100)
 					{
-						info += " R#" + childID + "->" + liveTypeID;
+						candidates += " #" + childID + "->" + liveTypeID;
 					}
 				}
 
@@ -1776,7 +1781,12 @@ public class Painter extends GameType implements GameState
 			base = base.getParent();
 		}
 
-		info += " | renderInstances=" + liveCount + " matches=" + matchCount;
+		info += " | nodes=" + nodesScanned + " liveR=" + liveCount
+			+ " matches=" + matchCount;
+		if (matches.length() > 0)
+			info += " MATCHES:" + matches;
+		else if (candidates.length() > 0)
+			info += " otherR:" + candidates;
 		infoline.changeText(info);
 	}
 
