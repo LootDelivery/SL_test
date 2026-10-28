@@ -126,6 +126,10 @@ public class Painter extends GameType implements GameState
 	ResourceRef paintBrush;
 
 	// Temporary state for the render-alpha experiment.
+	// The dedicated log is rewritten with the full accumulated text after each event.
+	String renderProbeLogBuffer = "";
+	final static String RENDER_PROBE_LOG_PATH = "slrr_render_probe.sdat";
+
 	Part alphaTestPart;
 	RenderRef alphaTestSource;
 	RenderRef alphaTestCopy;
@@ -380,10 +384,22 @@ public class Painter extends GameType implements GameState
 		logRenderProbe("probe initialized; click a part in Paint Part mode");
 	}
 
-	// Writes to SLRR's built-in Script log so probe output can be shared as a file.
+	// Log through System.log and maintain a dedicated file in the game root.
+	// SLRR File.MODE_WRITE creates an SDAT container, so attach this file directly
+	// instead of opening/editing it as ordinary text.
 	void logRenderProbe(String message)
 	{
-		System.log("[SLRR-RENDER-PROBE] " + message);
+		String row = "[SLRR-RENDER-PROBE] " + message;
+		System.log(row);
+
+		renderProbeLogBuffer += row + "\n";
+
+		File probeLog = new File(RENDER_PROBE_LOG_PATH);
+		if (probeLog.open(File.MODE_WRITE))
+		{
+			probeLog.write(renderProbeLogBuffer);
+			probeLog.close();
+		}
 	}
 
 	public void buildStockPaintList()
