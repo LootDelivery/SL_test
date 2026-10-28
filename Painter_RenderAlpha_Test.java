@@ -133,8 +133,6 @@ public class Painter extends GameType implements GameState
 
 	// Temporary live-instance color test. RenderRef exposes no color getter,
 	// so this diagnostic uses opaque magenta and neutral white as its reset value.
-	int renderProbeActiveInstanceId = 0;
-	int renderProbeColorApplied = 0;
 
 	Part alphaTestPart;
 	RenderRef alphaTestSource;
@@ -1713,20 +1711,9 @@ public class Painter extends GameType implements GameState
 	native void paintPart( GameRef cursor, int color );
 	native void xPaint( GameRef part );
 	
-	// Restore the temporary live-instance color probe to neutral white.
-	// Exact prior color cannot be retrieved through the exposed RenderRef API.
+	// Diagnostic cleanup only. The probe no longer changes live render colors.
 	void restoreRenderAlphaTest()
 	{
-		if (renderProbeColorApplied != 0 && renderProbeActiveInstanceId != 0)
-		{
-			RenderRef active = new RenderRef(renderProbeActiveInstanceId);
-			active.setColor(0xFFFFFFFF);
-			logRenderProbe("colorTest reset to neutral white; instance="
-				+ renderProbeActiveInstanceId);
-		}
-		renderProbeActiveInstanceId = 0;
-		renderProbeColorApplied = 0;
-
 		if (alphaTestCopy)
 			alphaTestCopy.destroy();
 
@@ -1766,15 +1753,21 @@ public class Painter extends GameType implements GameState
 		int targetID = target.id();
 		int targetKind = target.type();
 		int partRenderID = selected.getRenderType();
+		int partMeshID = selected.getMesh();
+		int partTextureID = selected.getTexture();
 
 		String info = "Render probe: part=" + targetID
-			+ " kind=" + targetKind + " partRT=" + partRenderID;
+			+ " kind=" + targetKind + " partRT=" + partRenderID
+			+ " partMesh=" + partMeshID + " partTex=" + partTextureID;
 		String pathSummary = "";
-		String matches = "";
+		String renderMatches = "";
+		String meshMatches = "";
+		String textureMatches = "";
 		String candidates = "";
 		int liveCount = 0;
-		int matchCount = 0;
-		int matchedInstanceId = 0;
+		int renderMatchCount = 0;
+		int meshMatchCount = 0;
+		int textureMatchCount = 0;
 		int nodesScanned = 0;
 
 		// Inspect the target and a few ancestors, checking each node and its children.
@@ -1795,16 +1788,24 @@ public class Painter extends GameType implements GameState
 				liveCount++;
 				if (liveBaseTypeID == partRenderID)
 				{
-					matchCount++;
-					if (matchedInstanceId == 0)
-						matchedInstanceId = baseID;
-					if (matches.length() < 160)
-						matches += " #" + baseID + "->" + liveBaseTypeID;
+					renderMatchCount++;
+					if (renderMatches.length() < 180)
+						renderMatches += " #" + baseID + "->" + liveBaseTypeID;
 				}
-				else if (candidates.length() < 100)
+				if (liveBaseTypeID == partMeshID)
 				{
-					candidates += " #" + baseID + "->" + liveBaseTypeID;
+					meshMatchCount++;
+					if (meshMatches.length() < 180)
+						meshMatches += " #" + baseID + "->" + liveBaseTypeID;
 				}
+				if (liveBaseTypeID == partTextureID)
+				{
+					textureMatchCount++;
+					if (textureMatches.length() < 180)
+						textureMatches += " #" + baseID + "->" + liveBaseTypeID;
+				}
+				if (candidates.length() < 520)
+					candidates += " #" + baseID + "->" + liveBaseTypeID;
 			}
 
 			ResourceRef child = base.getFirstChild();
@@ -1820,16 +1821,24 @@ public class Painter extends GameType implements GameState
 					liveCount++;
 					if (liveTypeID == partRenderID)
 					{
-						matchCount++;
-						if (matchedInstanceId == 0)
-							matchedInstanceId = childID;
-						if (matches.length() < 160)
-							matches += " #" + childID + "->" + liveTypeID;
+						renderMatchCount++;
+						if (renderMatches.length() < 180)
+							renderMatches += " #" + childID + "->" + liveTypeID;
 					}
-					else if (candidates.length() < 100)
+					if (liveTypeID == partMeshID)
 					{
-						candidates += " #" + childID + "->" + liveTypeID;
+						meshMatchCount++;
+						if (meshMatches.length() < 180)
+							meshMatches += " #" + childID + "->" + liveTypeID;
 					}
+					if (liveTypeID == partTextureID)
+					{
+						textureMatchCount++;
+						if (textureMatches.length() < 180)
+							textureMatches += " #" + childID + "->" + liveTypeID;
+					}
+					if (candidates.length() < 520)
+						candidates += " #" + childID + "->" + liveTypeID;
 				}
 
 				child = child.getNextChild();
@@ -1839,50 +1848,18 @@ public class Painter extends GameType implements GameState
 		}
 
 		info += " | path:" + pathSummary + " | nodes=" + nodesScanned
-			+ " liveR=" + liveCount + " matches=" + matchCount;
-		if (matches.length() > 0)
-			info += " MATCHES:" + matches;
-		else if (candidates.length() > 0)
-			info += " otherR:" + candidates;
-
-		// Test setColor on the existing matched instance, not on Part.setRenderType
-		// and not on a newly created render instance. One click = magenta; next =
-		// neutral white. The exact original instance color is not exposed by Java.
-		if (matchedInstanceId != 0)
-		{
-			if (renderProbeColorApplied != 0
-				&& renderProbeActiveInstanceId == matchedInstanceId)
-			{
-				RenderRef active = new RenderRef(matchedInstanceId);
-				active.setColor(0xFFFFFFFF);
-				renderProbeColorApplied = 0;
-				info += " | colorTest=RESET_WHITE instance=" + matchedInstanceId;
-				logRenderProbe("colorTest reset to neutral white; instance="
-					+ matchedInstanceId);
-			}
-			else
-			{
-				if (renderProbeColorApplied != 0
-					&& renderProbeActiveInstanceId != 0)
-				{
-					RenderRef previous = new RenderRef(renderProbeActiveInstanceId);
-					previous.setColor(0xFFFFFFFF);
-					logRenderProbe("colorTest reset previous instance to neutral white; instance="
-						+ renderProbeActiveInstanceId);
-				}
-
-				RenderRef active = new RenderRef(matchedInstanceId);
-				active.setColor(0xFFFF00FF);
-				renderProbeActiveInstanceId = matchedInstanceId;
-				renderProbeColorApplied = 1;
-				info += " | colorTest=MAGENTA instance=" + matchedInstanceId
-					+ " color=0xFFFF00FF";
-				logRenderProbe("colorTest set opaque magenta on existing instance="
-					+ matchedInstanceId + " color=0xFFFF00FF");
-			}
-		}
-		else
-			info += " | colorTest=SKIPPED no matching instance";
+			+ " liveR=" + liveCount
+			+ " rtMatches=" + renderMatchCount
+			+ " meshMatches=" + meshMatchCount
+			+ " texMatches=" + textureMatchCount;
+		if (renderMatches.length() > 0)
+			info += " RT:" + renderMatches;
+		if (meshMatches.length() > 0)
+			info += " MESH:" + meshMatches;
+		if (textureMatches.length() > 0)
+			info += " TEX:" + textureMatches;
+		if (candidates.length() > 0)
+			info += " candidates:" + candidates;
 
 		infoline.changeText(info);
 		logRenderProbe(info);
