@@ -1735,7 +1735,7 @@ public class Painter extends GameType implements GameState
 		nodeCount[0] = nodeCount[0] + 1;
 		int nodeID = node.id();
 		int nodeKind = node.type();
-		String row = "\\nNODE d=" + depth
+		String row = "\nNODE d=" + depth
 			+ " id=" + nodeID
 			+ " kind=" + nodeKind
 			+ " parent=" + node.getParentID();
@@ -1758,7 +1758,7 @@ public class Painter extends GameType implements GameState
 			childCount++;
 		}
 		if (child)
-			row += "\\nTRUNCATED_CHILDREN parent=" + nodeID;
+			row += "\nTRUNCATED_CHILDREN parent=" + nodeID;
 		return row;
 	}
 
@@ -1802,7 +1802,7 @@ public class Painter extends GameType implements GameState
 
 		int[] nodeCount = new int[1];
 		nodeCount[0] = 0;
-		report += "\\n-- SELECTED PART SUBTREE --";
+		report += "\n-- SELECTED PART SUBTREE --";
 		report += scanResourceSubtree(target, 0, nodeCount, partRenderID);
 
 		// Walk upward and inspect sibling branches, because the actual drawable
@@ -1814,7 +1814,7 @@ public class Painter extends GameType implements GameState
 			if (!parent)
 				break;
 
-			report += "\\n-- SIBLINGS of #" + branch.id()
+			report += "\n-- SIBLINGS of #" + branch.id()
 				+ " under parent #" + parent.id()
 				+ " --";
 			ResourceRef sibling = parent.getFirstChild();
@@ -1829,7 +1829,7 @@ public class Painter extends GameType implements GameState
 			branch = parent;
 		}
 
-		report += "\\nTOTAL_NODES_SCANNED=" + nodeCount[0]
+		report += "\nTOTAL_NODES_SCANNED=" + nodeCount[0]
 			+ " (depth cap 8; total cap 320; per-parent child cap 48)";
 		infoline.changeText("Tree probe: part " + targetID
 			+ " RT=" + partRenderID + " nodes=" + nodeCount[0]
