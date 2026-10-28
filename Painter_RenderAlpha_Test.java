@@ -130,8 +130,10 @@ public class Painter extends GameType implements GameState
 	String renderProbeLogBuffer = "";
 	final static String RENDER_PROBE_LOG_PATH = "slrr_render_probe.sdat";
 
-	// Temporary live-instance color test. RenderRef exposes no color getter,
-	// so this diagnostic uses opaque magenta and neutral white as its reset value.
+	// Alpha-channel probe on a matched live RenderRef.
+	// RenderRef exposes no color getter: white is a neutral reset, not an exact restore.
+	int renderProbeAlphaInstanceId = 0;
+	int renderProbeAlphaApplied = 0;
 
 	Part alphaTestPart;
 	RenderRef alphaTestSource;
@@ -1710,9 +1712,19 @@ public class Painter extends GameType implements GameState
 	native void paintPart( GameRef cursor, int color );
 	native void xPaint( GameRef part );
 	
-	// Diagnostic cleanup only. The probe no longer changes live render colors.
+	// Reset a test override when leaving Painter. Exact original color is not exposed by RenderRef.
 	void restoreRenderAlphaTest()
 	{
+		if (renderProbeAlphaApplied != 0 && renderProbeAlphaInstanceId != 0)
+		{
+			RenderRef active = new RenderRef(renderProbeAlphaInstanceId);
+			active.setColor(0xFFFFFFFF);
+			logRenderProbe("alphaTest cleanup reset to neutral white; instance="
+				+ renderProbeAlphaInstanceId);
+		}
+		renderProbeAlphaInstanceId = 0;
+		renderProbeAlphaApplied = 0;
+
 		if (alphaTestCopy)
 			alphaTestCopy.destroy();
 
@@ -1763,6 +1775,7 @@ public class Painter extends GameType implements GameState
 		String candidates = "";
 		int liveCount = 0;
 		int renderMatchCount = 0;
+		int matchedInstanceId = 0;
 		int nodesScanned = 0;
 		int[] rendersAtDepth = new int[5];
 
@@ -1786,6 +1799,8 @@ public class Painter extends GameType implements GameState
 				if (liveBaseTypeID == partRenderID)
 				{
 					renderMatchCount++;
+					if (matchedInstanceId == 0)
+						matchedInstanceId = baseID;
 					if (renderMatches.length() < 260)
 						renderMatches += " #" + baseID + "->" + liveBaseTypeID
 							+ "(nodeDepth=" + depth + ")";
@@ -1809,6 +1824,8 @@ public class Painter extends GameType implements GameState
 					if (liveTypeID == partRenderID)
 					{
 						renderMatchCount++;
+						if (matchedInstanceId == 0)
+							matchedInstanceId = childID;
 						if (renderMatches.length() < 260)
 							renderMatches += " #" + childID + "->" + liveTypeID
 								+ "(owner=#" + baseID + " ownerDepth=" + depth + ")";
@@ -1834,6 +1851,45 @@ public class Painter extends GameType implements GameState
 			info += " RT_MATCH:" + renderMatches;
 		if (candidates.length() > 0)
 			info += " candidates:" + candidates;
+
+		// Alpha-only experiment on the matched existing instance: first click uses
+		// 50% alpha with white RGB; next click resets to neutral white. This does
+		// not prove the instance is the actual draw object and does not edit SCX data.
+		if (matchedInstanceId != 0)
+		{
+			if (renderProbeAlphaApplied != 0
+				&& renderProbeAlphaInstanceId == matchedInstanceId)
+			{
+				RenderRef active = new RenderRef(matchedInstanceId);
+				active.setColor(0xFFFFFFFF);
+				renderProbeAlphaApplied = 0;
+				info += " | alphaTest=RESET_WHITE instance=" + matchedInstanceId;
+				logRenderProbe("alphaTest reset to neutral white; instance="
+					+ matchedInstanceId);
+			}
+			else
+			{
+				if (renderProbeAlphaApplied != 0
+					&& renderProbeAlphaInstanceId != 0)
+				{
+					RenderRef previous = new RenderRef(renderProbeAlphaInstanceId);
+					previous.setColor(0xFFFFFFFF);
+					logRenderProbe("alphaTest reset previous instance to neutral white; instance="
+						+ renderProbeAlphaInstanceId);
+				}
+
+				RenderRef active = new RenderRef(matchedInstanceId);
+				active.setColor(0x80FFFFFF);
+				renderProbeAlphaInstanceId = matchedInstanceId;
+				renderProbeAlphaApplied = 1;
+				info += " | alphaTest=HALF_ALPHA instance=" + matchedInstanceId
+					+ " color=0x80FFFFFF";
+				logRenderProbe("alphaTest set 0x80FFFFFF on existing instance="
+					+ matchedInstanceId);
+			}
+		}
+		else
+			info += " | alphaTest=SKIPPED no matching instance";
 
 		infoline.changeText(info);
 		logRenderProbe(info);
