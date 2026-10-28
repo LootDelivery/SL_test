@@ -1761,14 +1761,11 @@ public class Painter extends GameType implements GameState
 			+ " partMesh=" + partMeshID + " partTex=" + partTextureID;
 		String pathSummary = "";
 		String renderMatches = "";
-		String meshMatches = "";
-		String textureMatches = "";
 		String candidates = "";
 		int liveCount = 0;
 		int renderMatchCount = 0;
-		int meshMatchCount = 0;
-		int textureMatchCount = 0;
 		int nodesScanned = 0;
+		int[] rendersAtDepth = new int[5];
 
 		// Inspect the target and a few ancestors, checking each node and its children.
 		// This is read-only: no render resources are created or modified.
@@ -1786,25 +1783,15 @@ public class Painter extends GameType implements GameState
 				RenderRef liveBase = new RenderRef(baseID);
 				int liveBaseTypeID = liveBase.getTypeID();
 				liveCount++;
+				rendersAtDepth[depth]++;
 				if (liveBaseTypeID == partRenderID)
 				{
 					renderMatchCount++;
-					if (renderMatches.length() < 180)
-						renderMatches += " #" + baseID + "->" + liveBaseTypeID;
+					if (renderMatches.length() < 260)
+						renderMatches += " #" + baseID + "->" + liveBaseTypeID
+							+ "(nodeDepth=" + depth + ")";
 				}
-				if (liveBaseTypeID == partMeshID)
-				{
-					meshMatchCount++;
-					if (meshMatches.length() < 180)
-						meshMatches += " #" + baseID + "->" + liveBaseTypeID;
-				}
-				if (liveBaseTypeID == partTextureID)
-				{
-					textureMatchCount++;
-					if (textureMatches.length() < 180)
-						textureMatches += " #" + baseID + "->" + liveBaseTypeID;
-				}
-				if (candidates.length() < 520)
+				if (candidates.length() < 360)
 					candidates += " #" + baseID + "->" + liveBaseTypeID;
 			}
 
@@ -1819,25 +1806,15 @@ public class Painter extends GameType implements GameState
 					RenderRef liveChild = new RenderRef(childID);
 					int liveTypeID = liveChild.getTypeID();
 					liveCount++;
+					rendersAtDepth[depth]++;
 					if (liveTypeID == partRenderID)
 					{
 						renderMatchCount++;
-						if (renderMatches.length() < 180)
-							renderMatches += " #" + childID + "->" + liveTypeID;
+						if (renderMatches.length() < 260)
+							renderMatches += " #" + childID + "->" + liveTypeID
+								+ "(owner=#" + baseID + " ownerDepth=" + depth + ")";
 					}
-					if (liveTypeID == partMeshID)
-					{
-						meshMatchCount++;
-						if (meshMatches.length() < 180)
-							meshMatches += " #" + childID + "->" + liveTypeID;
-					}
-					if (liveTypeID == partTextureID)
-					{
-						textureMatchCount++;
-						if (textureMatches.length() < 180)
-							textureMatches += " #" + childID + "->" + liveTypeID;
-					}
-					if (candidates.length() < 520)
+					if (candidates.length() < 360)
 						candidates += " #" + childID + "->" + liveTypeID;
 				}
 
@@ -1847,17 +1824,15 @@ public class Painter extends GameType implements GameState
 			base = base.getParent();
 		}
 
+		String depthCounts = "";
+		for (int i = 0; i < rendersAtDepth.length; i++)
+			depthCounts += " d" + i + "=" + rendersAtDepth[i];
+
 		info += " | path:" + pathSummary + " | nodes=" + nodesScanned
-			+ " liveR=" + liveCount
-			+ " rtMatches=" + renderMatchCount
-			+ " meshMatches=" + meshMatchCount
-			+ " texMatches=" + textureMatchCount;
+			+ " liveR=" + liveCount + " rtMatches=" + renderMatchCount
+			+ " rendersByDepth:" + depthCounts;
 		if (renderMatches.length() > 0)
-			info += " RT:" + renderMatches;
-		if (meshMatches.length() > 0)
-			info += " MESH:" + meshMatches;
-		if (textureMatches.length() > 0)
-			info += " TEX:" + textureMatches;
+			info += " RT_MATCH:" + renderMatches;
 		if (candidates.length() > 0)
 			info += " candidates:" + candidates;
 
