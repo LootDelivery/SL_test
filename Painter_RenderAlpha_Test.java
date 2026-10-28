@@ -1723,11 +1723,30 @@ public class Painter extends GameType implements GameState
 		int liveCount = 0;
 		int matchCount = 0;
 
-		// Check the target and then a few ancestors, scanning each node's children.
+		// Check the target and then a few ancestors, scanning each node and its children.
 		ResourceRef base = target;
 		for (int depth = 0; base && depth < 5 && info.length() < 650; depth++)
 		{
-			info += " | N" + base.id() + "/T" + base.type();
+			int baseID = base.id();
+			int baseKind = base.type();
+			info += " | N" + baseID + "/T" + baseKind;
+
+			// A render instance may itself be an ancestor of the clicked GameRef.
+			if (baseKind == 3)
+			{
+				RenderRef liveBase = new RenderRef(baseID);
+				int liveBaseTypeID = liveBase.getTypeID();
+				liveCount++;
+				if (liveBaseTypeID == partRenderID)
+				{
+					matchCount++;
+					info += " MATCH#" + baseID + "->" + liveBaseTypeID;
+				}
+				else
+				{
+					info += " R#" + baseID + "->" + liveBaseTypeID;
+				}
+			}
 
 			ResourceRef child = base.getFirstChild();
 			for (int i = 0; child && i < 48 && info.length() < 650; i++)
