@@ -1,8 +1,9 @@
-// EXPERIMENTAL RENDER-ALPHA TEST BUILD
+// EXPERIMENTAL RENDER-RESOURCE DIAGNOSTIC BUILD
 // TEST ONLY: rename to Painter.java in the SLRR script source folder, compile, and back up the existing Painter first.
-// In Paint Part mode, clicking a part duplicates its render resource and calls setColor(0x66FFFFFF).
+// Diagnostic stage: in Paint Part mode, clicking a part duplicates its render resource and tints it opaque magenta.
+// This intentionally tests whether the render-resource swap is visible, independent of alpha blending.
 // Clicking the same part again restores its original render resource. Leaving Painter also attempts restoration.
-// This does NOT edit SCX files and does NOT paint parts. Runtime alpha blending is not confirmed.
+// This does NOT edit SCX files and does NOT paint parts. It is not yet the transparency test.
 package java.game;
 
 import java.io.*;
@@ -1734,7 +1735,7 @@ public class Painter extends GameType implements GameState
 		RenderRef source = new RenderRef(originalRender);
 		RenderRef copy = new RenderRef();
 		copy.duplicate(source);
-		copy.setColor(0x66FFFFFF);
+		copy.setColor(0xFFFF00FF);
 
 		alphaTestPart = selected;
 		alphaTestSource = source;
