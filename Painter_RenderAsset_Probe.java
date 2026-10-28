@@ -1710,6 +1710,9 @@ public class Painter extends GameType implements GameState
 	native void paintPart( GameRef cursor, int color );
 	native void xPaint( GameRef part );
 	
+	// Kept as a no-op because the inherited Painter flow calls it when Paint Part closes.
+	void restoreRenderAlphaTest() {}
+
 	// Diagnostic only: construct ResourceRef views for the IDs reported by Part.
 	// This does not mutate render resources or change any colors/material values.
 	String scanResourceNode(ResourceRef node, int depth, int[] nodeCount, int limit)
