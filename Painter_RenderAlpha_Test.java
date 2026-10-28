@@ -130,6 +130,11 @@ public class Painter extends GameType implements GameState
 	String renderProbeLogBuffer = "";
 	final static String RENDER_PROBE_LOG_PATH = "slrr_render_probe.sdat";
 
+	// Temporary live-instance color test. RenderRef exposes no color getter,
+	// so this diagnostic uses opaque magenta and neutral white as its reset value.
+	int renderProbeActiveInstanceId = 0;
+	int renderProbeColorApplied = 0;
+
 	Part alphaTestPart;
 	RenderRef alphaTestSource;
 	RenderRef alphaTestCopy;
@@ -1707,9 +1712,20 @@ public class Painter extends GameType implements GameState
 	native void paintPart( GameRef cursor, int color );
 	native void xPaint( GameRef part );
 	
-	// Remove the temporary diagnostic render instance.
+	// Restore the temporary live-instance color probe to neutral white.
+	// Exact prior color cannot be retrieved through the exposed RenderRef API.
 	void restoreRenderAlphaTest()
 	{
+		if (renderProbeColorApplied != 0 && renderProbeActiveInstanceId != 0)
+		{
+			RenderRef active = new RenderRef(renderProbeActiveInstanceId);
+			active.setColor(0xFFFFFFFF);
+			logRenderProbe("colorTest reset to neutral white; instance="
+				+ renderProbeActiveInstanceId);
+		}
+		renderProbeActiveInstanceId = 0;
+		renderProbeColorApplied = 0;
+
 		if (alphaTestCopy)
 			alphaTestCopy.destroy();
 
@@ -1757,6 +1773,7 @@ public class Painter extends GameType implements GameState
 		String candidates = "";
 		int liveCount = 0;
 		int matchCount = 0;
+		int matchedInstanceId = 0;
 		int nodesScanned = 0;
 
 		// Inspect the target and a few ancestors, checking each node and its children.
@@ -1778,6 +1795,8 @@ public class Painter extends GameType implements GameState
 				if (liveBaseTypeID == partRenderID)
 				{
 					matchCount++;
+					if (matchedInstanceId == 0)
+						matchedInstanceId = baseID;
 					if (matches.length() < 160)
 						matches += " #" + baseID + "->" + liveBaseTypeID;
 				}
@@ -1801,6 +1820,8 @@ public class Painter extends GameType implements GameState
 					if (liveTypeID == partRenderID)
 					{
 						matchCount++;
+						if (matchedInstanceId == 0)
+							matchedInstanceId = childID;
 						if (matches.length() < 160)
 							matches += " #" + childID + "->" + liveTypeID;
 					}
@@ -1822,6 +1843,46 @@ public class Painter extends GameType implements GameState
 			info += " MATCHES:" + matches;
 		else if (candidates.length() > 0)
 			info += " otherR:" + candidates;
+
+		// Test setColor on the existing matched instance, not on Part.setRenderType
+		// and not on a newly created render instance. One click = magenta; next =
+		// neutral white. The exact original instance color is not exposed by Java.
+		if (matchedInstanceId != 0)
+		{
+			if (renderProbeColorApplied != 0
+				&& renderProbeActiveInstanceId == matchedInstanceId)
+			{
+				RenderRef active = new RenderRef(matchedInstanceId);
+				active.setColor(0xFFFFFFFF);
+				renderProbeColorApplied = 0;
+				info += " | colorTest=RESET_WHITE instance=" + matchedInstanceId;
+				logRenderProbe("colorTest reset to neutral white; instance="
+					+ matchedInstanceId);
+			}
+			else
+			{
+				if (renderProbeColorApplied != 0
+					&& renderProbeActiveInstanceId != 0)
+				{
+					RenderRef previous = new RenderRef(renderProbeActiveInstanceId);
+					previous.setColor(0xFFFFFFFF);
+					logRenderProbe("colorTest reset previous instance to neutral white; instance="
+						+ renderProbeActiveInstanceId);
+				}
+
+				RenderRef active = new RenderRef(matchedInstanceId);
+				active.setColor(0xFFFF00FF);
+				renderProbeActiveInstanceId = matchedInstanceId;
+				renderProbeColorApplied = 1;
+				info += " | colorTest=MAGENTA instance=" + matchedInstanceId
+					+ " color=0xFFFF00FF";
+				logRenderProbe("colorTest set opaque magenta on existing instance="
+					+ matchedInstanceId + " color=0xFFFF00FF");
+			}
+		}
+		else
+			info += " | colorTest=SKIPPED no matching instance";
+
 		infoline.changeText(info);
 		logRenderProbe(info);
 	}
