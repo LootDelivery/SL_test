@@ -1708,8 +1708,13 @@ public class Painter extends GameType implements GameState
 		if (target.getInfo(GameType.GII_CATEGORY) != GIR_CAT_PART)
 			return;
 
-		// GameRef is a resource wrapper, not a Java Part instance; wrap its ID explicitly.
-		Part selected = new Part(target.id());
+		// Use the existing script instance. Part(int id) does not initialize
+		// the native GameType reference in this source (super(id) is commented out).
+		Object instance = target.getScriptInstance();
+		if (!(instance instanceof Part))
+			return;
+
+		Part selected = (Part)instance;
 		int selectedID = selected.id();
 
 		// Clicking the currently modified part again restores it.
@@ -1837,9 +1842,12 @@ public class Painter extends GameType implements GameState
 				
 				if (mode==MODE_PAINTPART )
 				{
-					// Do not paint. Temporarily swap the clicked part's render resource for this test.
+					// Keep the Painter click sound as event feedback during this test.
 					if (cat == GIR_CAT_PART)
+					{
+						SfxSPRAY.play(worldpos, 0.0, 1.0, 1.0, 0);
 						toggleRenderAlphaTest(dest);
+					}
 				}
 				else
 				if (mode==MODE_PAINTDECAL)
