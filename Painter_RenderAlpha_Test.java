@@ -1713,7 +1713,10 @@ public class Painter extends GameType implements GameState
 		// the native GameType reference in this source (super(id) is commented out).
 		Object instance = target.getScriptInstance();
 		if (!(instance instanceof Part))
+		{
+			infoline.changeText("Render test: target has no Part script instance");
 			return;
+		}
 
 		Part selected = (Part)instance;
 		int selectedID = selected.id();
@@ -1722,6 +1725,7 @@ public class Painter extends GameType implements GameState
 		if (alphaTestPart && selectedID == alphaTestPartId)
 		{
 			restoreRenderAlphaTest();
+			infoline.changeText("Render test: restored part " + selectedID);
 			return;
 		}
 
@@ -1730,7 +1734,10 @@ public class Painter extends GameType implements GameState
 
 		int originalRender = selected.getRenderType();
 		if (!originalRender)
+		{
+			infoline.changeText("Render test: part " + selectedID + " has no render type");
 			return;
+		}
 
 		RenderRef source = new RenderRef(originalRender);
 		RenderRef copy = new RenderRef();
@@ -1744,6 +1751,8 @@ public class Painter extends GameType implements GameState
 		alphaTestPartId = selectedID;
 
 		selected.setRenderType(copy.id());
+		infoline.changeText("Render test: " + originalRender + " -> " + copy.id()
+			+ "; current=" + selected.getRenderType());
 	}
 
 	public void beginPaint( int cursor_id )
