@@ -1,8 +1,9 @@
-// EXPERIMENTAL RENDER-RESOURCE DIAGNOSTIC BUILD
+// EXPERIMENTAL LIVE RENDER-INSTANCE DIAGNOSTIC BUILD
 // TEST ONLY: rename to Painter.java in the SLRR script source folder, compile, and back up the existing Painter first.
-// Diagnostic stage: in Paint Part mode, clicking a part duplicates its render resource and tints it opaque magenta.
-// This intentionally tests whether the render-resource swap is visible, independent of alpha blending.
-// Clicking the same part again restores its original render resource. Leaving Painter also attempts restoration.
+// In Paint Part mode, clicking a part creates a temporary render instance using that part's render type,
+// tints the instance opaque magenta, and asks the parent to render it.
+// This tests RenderRef instance coloring independently of Part.setRenderType and alpha blending.
+// Clicking the same part again destroys the diagnostic instance. Leaving Painter also attempts cleanup.
 // This does NOT edit SCX files and does NOT paint parts. It is not yet the transparency test.
 package java.game;
 
@@ -1684,12 +1685,9 @@ public class Painter extends GameType implements GameState
 	native void paintPart( GameRef cursor, int color );
 	native void xPaint( GameRef part );
 	
-	// Restore the previously selected part and release the temporary render copy.
+	// Remove the temporary diagnostic render instance.
 	void restoreRenderAlphaTest()
 	{
-		if (alphaTestPart && alphaTestOriginalRender)
-			alphaTestPart.setRenderType(alphaTestOriginalRender);
-
 		if (alphaTestCopy)
 			alphaTestCopy.destroy();
 
@@ -1700,7 +1698,7 @@ public class Painter extends GameType implements GameState
 		alphaTestPartId = 0;
 	}
 
-	// In Paint Part mode, this replaces painting with a temporary render-resource test.
+	// In Paint Part mode, create a temporary visible render instance as a diagnostic.
 	void toggleRenderAlphaTest(GameRef target)
 	{
 		if (!target)
@@ -1709,50 +1707,48 @@ public class Painter extends GameType implements GameState
 		if (target.getInfo(GameType.GII_CATEGORY) != GIR_CAT_PART)
 			return;
 
-		// Use the existing script instance. Part(int id) does not initialize
-		// the native GameType reference in this source (super(id) is commented out).
-		Object instance = target.getScriptInstance();
-		if (!(instance instanceof Part))
+		Object scriptInstance = target.getScriptInstance();
+		if (!(scriptInstance instanceof Part))
 		{
-			infoline.changeText("Render test: target has no Part script instance");
+			infoline.changeText("Render instance test: target has no Part script instance");
 			return;
 		}
 
-		Part selected = (Part)instance;
+		Part selected = (Part)scriptInstance;
 		int selectedID = selected.id();
 
-		// Clicking the currently modified part again restores it.
+		// Clicking the currently tested part again removes the diagnostic instance.
 		if (alphaTestPart && selectedID == alphaTestPartId)
 		{
 			restoreRenderAlphaTest();
-			infoline.changeText("Render test: restored part " + selectedID);
+			infoline.changeText("Render instance test: removed overlay for part " + selectedID);
 			return;
 		}
 
-		// Only one part is modified at a time.
 		restoreRenderAlphaTest();
 
 		int originalRender = selected.getRenderType();
 		if (!originalRender)
 		{
-			infoline.changeText("Render test: part " + selectedID + " has no render type");
+			infoline.changeText("Render instance test: part " + selectedID + " has no render type");
 			return;
 		}
 
-		RenderRef source = new RenderRef(originalRender);
-		RenderRef copy = new RenderRef();
-		copy.duplicate(source);
-		copy.setColor(0xFFFF00FF);
+		// Resource type 14 is the render type/template. This constructor creates
+		// a type-3 render instance parented to the clicked part.
+		RenderRef overlay = new RenderRef(target, originalRender, "render alpha diagnostic");
+		overlay.setColor(0xFFFF00FF);
+		target.queueEvent(null, GameType.EVENT_COMMAND, "render " + overlay.id());
 
 		alphaTestPart = selected;
-		alphaTestSource = source;
-		alphaTestCopy = copy;
+		alphaTestSource = null;
+		alphaTestCopy = overlay;
 		alphaTestOriginalRender = originalRender;
 		alphaTestPartId = selectedID;
 
-		selected.setRenderType(copy.id());
-		infoline.changeText("Render test: " + originalRender + " -> " + copy.id()
-			+ "; current=" + selected.getRenderType());
+		infoline.changeText("Render instance test: part " + selectedID
+			+ ", type " + originalRender + ", instance " + overlay.id()
+			+ " (opaque magenta)");
 	}
 
 	public void beginPaint( int cursor_id )
