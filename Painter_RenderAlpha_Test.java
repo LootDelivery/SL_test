@@ -377,6 +377,13 @@ public class Painter extends GameType implements GameState
 		}
 		
 		refreshDisplayCan();
+		logRenderProbe("probe initialized; click a part in Paint Part mode");
+	}
+
+	// Writes to SLRR's built-in Script log so probe output can be shared as a file.
+	void logRenderProbe(String message)
+	{
+		System.log("[SLRR-RENDER-PROBE] " + message);
 	}
 
 	public void buildStockPaintList()
@@ -1701,15 +1708,24 @@ public class Painter extends GameType implements GameState
 	void toggleRenderAlphaTest(GameRef target)
 	{
 		if (!target)
+		{
+			logRenderProbe("ignored null target");
 			return;
+		}
 
 		if (target.getInfo(GameType.GII_CATEGORY) != GIR_CAT_PART)
+		{
+			logRenderProbe("ignored non-part target id=" + target.id()
+				+ " type=" + target.type());
 			return;
+		}
 
 		Object scriptInstance = target.getScriptInstance();
 		if (!(scriptInstance instanceof Part))
 		{
-			infoline.changeText("Render probe: target has no Part script instance");
+			String error = "Render probe: target has no Part script instance";
+			infoline.changeText(error);
+			logRenderProbe(error);
 			return;
 		}
 
@@ -1791,6 +1807,7 @@ public class Painter extends GameType implements GameState
 		else if (candidates.length() > 0)
 			info += " otherR:" + candidates;
 		infoline.changeText(info);
+		logRenderProbe(info);
 	}
 
 	public void beginPaint( int cursor_id )
