@@ -1720,6 +1720,7 @@ public class Painter extends GameType implements GameState
 
 		String info = "Render probe: part=" + targetID
 			+ " kind=" + targetKind + " partRT=" + partRenderID;
+		String pathSummary = "";
 		String matches = "";
 		String candidates = "";
 		int liveCount = 0;
@@ -1734,6 +1735,8 @@ public class Painter extends GameType implements GameState
 			int baseID = base.id();
 			int baseKind = base.type();
 			nodesScanned++;
+			if (pathSummary.length() < 90)
+				pathSummary += " #" + baseID + "t" + baseKind;
 
 			if (baseKind == 3)
 			{
@@ -1781,8 +1784,8 @@ public class Painter extends GameType implements GameState
 			base = base.getParent();
 		}
 
-		info += " | nodes=" + nodesScanned + " liveR=" + liveCount
-			+ " matches=" + matchCount;
+		info += " | path:" + pathSummary + " | nodes=" + nodesScanned
+			+ " liveR=" + liveCount + " matches=" + matchCount;
 		if (matches.length() > 0)
 			info += " MATCHES:" + matches;
 		else if (candidates.length() > 0)
