@@ -1,28 +1,32 @@
-# Glass opacity slider — persistence prototype
+# Glass opacity and tint controls — persistence prototype
 
-Branch: `glass-opacity-persistence-prototype`
+Branch: `glass-opacity-tint-controls`
 
-This experimental revision adds a versioned per-part payload for Window/Windshield opacity.
+This revision keeps the working runtime render override and adds fine-grained tint controls.
 
-## What changed
+## Features
 
-- `Part.java`: bumps `SAVEFILEVERSION_PART` from 2 to 3 and records each loaded part's own file version in `file_ver`. This avoids using the global `save_version` after recursive child loads.
-- `GlassOpacityTuner.java`: stores two integers after a Window/Windshield record: an override marker and alpha (0–255). The transient render type/resource IDs are not serialized.
-- `Window.java` and `Windshield.java`: load the payload only for v3+ records, save it after the base record, and rebuild the rendering override from `install()` after the part is attached to the scene graph.
-- v2 parts are expected to load without attempting to read opacity bytes.
+- **Glass opacity:** 0–100%, in 5% increments (21 positions). The selected percentage is mapped to the 0–255 alpha channel.
+- **Glass tint:** independent Red, Green, Blue sliders from 0 to 255. They use single-unit resolution to preserve the stock tint (22, 13, 13) exactly until the user changes it.
+- **Persistence:** part-save format version 4. Version-3 Window/Windshield records still read their original two-value payload and default to stock RGB tint; v4 records also read RGB.
+- **Render internals:** temporary RenderRef/resource handles are rebuilt after install and are not serialized.
 
-## Test on a disposable copy/save only
+## Reflection strength
 
-1. Back up the source files and the entire test save.
-2. Compile the modified `Part.java`, `GlassOpacityTuner.java`, `Window.java`, and `Windshield.java` together.
-3. Load a pre-existing v2 save. Confirm it loads, and that buying a car still works.
-4. Open the screwdriver menu on a windshield/window, set an unusual value (for example 40%), confirm/OK, save, exit fully, and reload.
-5. Check that the same glass retains its opacity. Also check an untouched window remains at its normal appearance.
-6. Save and reload again, and repeat the purchase/load checks.
+No reflection-strength slider is included yet. In the renderer, the glass reflection contribution is driven by the mesh material's `env_factor`; the currently validated `RenderRef.setColor()` instance override changes colour channels, not that factor. Wiring a slider to tint or transparency would not be an independent reflection control. We need a supported way to edit or swap a per-instance material parameter first.
 
-## Important limitations
+## Test on a disposable copy/save
 
-- This has **not been compiled or tested in-game** by the authoring environment. The first in-game test must use a disposable copy.
-- The save-format bump is global: all parts written by this source tree will have record version 3, while only Window/Windshield write the extra two integers.
-- If loading an old save, saving it in this branch, then reverting to unmodified v2 scripts is **not guaranteed to be compatible**. Keep backups.
-- If the slider works but the saved value does not return, capture the SLRR log and tell us whether the opacity override was applied immediately after the load/install process.
+1. Back up source files and the test save.
+2. Compile `Part.java`, `GlassOpacityTuner.java`, `Window.java`, and `Windshield.java` together.
+3. Load a current version-3 save and confirm it loads, buys cars, and retains existing alpha.
+4. Tune opacity to 35%, tint to a visible colour (for example R=80, G=160, B=220), confirm the dialog, save, exit, and reload.
+5. Confirm both the opacity and RGB tint survive a full restart.
+6. Open the tuning dialog again and test Cancel; both opacity and tint should revert.
+7. Save and reload again and verify car purchase/load.
+
+## Compatibility warning
+
+- This has **not** been compiled or tested in-game by the authoring environment. The first run must use a disposable copy.
+- The global part save-format version is now 4. Existing version-3 saves should be read using their old two-integer Window/Windshield payload, then future saves are written as version 4.
+- Do not revert to the old source tree after saving version-4 data unless you have backups.
