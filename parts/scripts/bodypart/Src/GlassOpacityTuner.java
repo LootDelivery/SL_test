@@ -27,7 +27,6 @@ public class GlassOpacityTuner
 	int tuningHadOverride = 0;
 	int previewRefreshInProgress = 0;
 	int previewRetryLogged = 0;
-	int restoreDiagnosticLogged = 0;
 
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
@@ -50,7 +49,7 @@ public class GlassOpacityTuner
 		saveGame.write( tintR );
 		saveGame.write( tintG );
 		saveGame.write( tintB );
-		System.print("Glass opacity SAVE: override=" + savedOverride + " alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
+		; // Logging unavailable in this SLRR script API.
 	}
 
 	public void load( File saveGame, int version )
@@ -78,8 +77,7 @@ public class GlassOpacityTuner
 		oldTintR = tintR;
 		oldTintG = tintG;
 		oldTintB = tintB;
-		restoreDiagnosticLogged = 0;
-		System.print("Glass opacity LOAD: version=" + version + " override=" + savedOverride + " alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
+		; // Logging unavailable in this SLRR script API.
 		hasOpacityOverride = 0;
 		if (savedOverride != 0)
 			restorePending = 1;
@@ -227,7 +225,7 @@ public class GlassOpacityTuner
 			if (applyAppearance(target, opacity, tintR, tintG, tintB))
 			{
 				restorePending = 0;
-				System.print("Glass opacity RESTORED on install: alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
+				; // Logging unavailable in this SLRR script API.
 			}
 			else
 				System.print("Glass opacity: saved override will remain pending; install-time render instance was unavailable.");
@@ -242,11 +240,6 @@ public class GlassOpacityTuner
 		// Keep a pending override alive and retry from InventoryPanel.focusHook().
 		previewRefreshInProgress = 1;
 
-		if (restorePending != 0 && restoreDiagnosticLogged == 0)
-		{
-			System.print("Glass opacity PREVIEW restore pending: alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
-			restoreDiagnosticLogged = 1;
-		}
 
 		if (restorePending != 0 || hasOpacityOverride == 0)
 		{
@@ -254,7 +247,7 @@ public class GlassOpacityTuner
 			{
 				restorePending = 0;
 				previewRetryLogged = 0;
-				System.print("Glass opacity RESTORED in inventory preview: alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
+				; // Logging unavailable in this SLRR script API.
 			}
 			previewRefreshInProgress = 0;
 			return;
@@ -437,7 +430,7 @@ public class GlassOpacityTuner
 		int originalMeshID = target.getMesh();
 		if (originalRenderID == 0 || originalMeshID == 0)
 		{
-			System.print("Glass opacity: part has no render type or mesh.");
+			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
@@ -449,7 +442,7 @@ public class GlassOpacityTuner
 
 		if (sourceType.type() != 14 || sourceMesh.type() != 5 || targetMesh.type() != 5)
 		{
-			System.print("Glass opacity: expected render type/mesh resource types are unavailable.");
+			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
@@ -461,7 +454,7 @@ public class GlassOpacityTuner
 		if (privateType.id() == 0 || privateType.type() != 14)
 		{
 			if (privateType.id() != 0) privateType.destroy();
-			System.print("Glass opacity: failed to duplicate the source render type.");
+			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
@@ -539,7 +532,7 @@ public class GlassOpacityTuner
 			}
 
 			if (target.getMesh() != originalMesh)
-				System.print("Glass opacity: original type restored, but mesh ID differs from its saved ID.");
+				; // Logging unavailable in this SLRR script API.
 		}
 		else if (target.getRenderType() != originalRenderType)
 		{
