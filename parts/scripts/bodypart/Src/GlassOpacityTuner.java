@@ -31,6 +31,7 @@ public class GlassOpacityTuner
 	// Inventory preview render children can appear one frame after show().
 	// Keep the temporary render type alive until a child instance exists.
 	int previewRefreshInProgress = 0;
+	int previewDebugLines = 0;
 
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
@@ -90,6 +91,62 @@ public class GlassOpacityTuner
 		oldAppearanceCustomized = appearanceCustomized;
 		restorePending = appearanceCustomized;
 		tuningHadOverride = 0;
+		previewDebugLines = 0;
+		logPreviewState(null, "LOAD");
+	}
+
+	// Temporary field diagnostic for the inventory-preview restoration issue.
+	// Uses System.log (supported in this installation); remove after diagnosis.
+	void logPreviewState( Part target, String phase )
+	{
+		if (previewDebugLines >= 40) return;
+		if (target && appearanceCustomized == 0 && restorePending == 0 && hasOpacityOverride == 0) return;
+
+		int partID = 0;
+		int renderID = 0;
+		int meshID = 0;
+		int privateID = 0;
+		if (target)
+		{
+			partID = target.id();
+			renderID = target.getRenderType();
+			meshID = target.getMesh();
+		}
+		if (privateTypeHandle) privateID = privateTypeHandle.id();
+
+		String line = "[GlassOpacityPreview] " + phase
+			+ " part=" + partID
+			+ " savedAlpha=" + opacity
+			+ " tint=" + tintR + "," + tintG + "," + tintB
+			+ " custom=" + appearanceCustomized
+			+ " pending=" + restorePending
+			+ " override=" + hasOpacityOverride
+			+ " targetRT=" + renderID
+			+ " mesh=" + meshID
+			+ " privateRT=" + privateID;
+
+		if (target)
+		{
+			GameRef targetRef = new GameRef(target.id());
+			ResourceRef child = targetRef.getFirstChild();
+			int childIndex = 0;
+			int renderChildren = 0;
+			while (child && childIndex < 32)
+			{
+				if (child.type() == 3)
+				{
+					RenderRef live = new RenderRef(child.id());
+					line += " child" + childIndex + "=" + child.id() + "/rt" + live.getTypeID();
+					renderChildren++;
+				}
+				child = child.getNextChild();
+				childIndex++;
+			}
+			line += " renderChildren=" + renderChildren;
+		}
+
+		System.log(line);
+		previewDebugLines++;
 	}
 
 	int clampColor( int value )
@@ -238,6 +295,7 @@ public class GlassOpacityTuner
 	public void onInventoryPreview( Part target )
 	{
 		previewRefreshInProgress = 1;
+		logPreviewState(target, "PREVIEW-ENTRY");
 
 		if (restorePending != 0 || hasOpacityOverride == 0)
 		{
@@ -372,11 +430,15 @@ public class GlassOpacityTuner
 	int applyAppearance( Part target, int alpha, int red, int green, int blue )
 	{
 		if (!ensureOverride(target))
+		{
+			logPreviewState(target, "APPLY-ENSURE-FAILED");
 			return 0;
+		}
 
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
+			logPreviewState(target, "APPLY-NO-INSTANCE");
 			if (previewRefreshInProgress != 0)
 				return 0;
 			restoreOverride(target);
@@ -390,6 +452,7 @@ public class GlassOpacityTuner
 		active.setColor(argb);
 		renderInstance = instanceID;
 		hasOpacityOverride = 1;
+		logPreviewState(target, "APPLY-COLOR-SET instance=" + instanceID + " argb=" + argb);
 		return 1;
 	}
 
