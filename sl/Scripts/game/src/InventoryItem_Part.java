@@ -17,6 +17,47 @@ public class InventoryItem_Part extends InventoryItem
 
 	int	compatibility;
 
+	// Temporary diagnostic for tracing whether inventory thumbnails call the glass preview hook.
+	static String inventoryPreviewTrace = "";
+	static int inventoryPreviewTraceLines = 0;
+	final static String INVENTORY_PREVIEW_TRACE_PATH = "slrr_inventory_preview_trace.sdat";
+
+	void logInventoryPreviewTrace( String phase, Part p )
+	{
+		if (inventoryPreviewTraceLines >= 100) return;
+		int partID = 0;
+		int renderType = 0;
+		int meshID = 0;
+		int isWindow = 0;
+		int isWindshield = 0;
+		if (p)
+		{
+			partID = p.id();
+			renderType = p.getRenderType();
+			meshID = p.getMesh();
+			if (p instanceof Window) isWindow = 1;
+			if (p instanceof Windshield) isWindshield = 1;
+		}
+		String line = "[InventoryGlassTrace] " + phase
+			+ " part=" + partID
+			+ " window=" + isWindow
+			+ " windshield=" + isWindshield
+			+ " renderType=" + renderType
+			+ " mesh=" + meshID;
+		inventoryPreviewTrace += line + "\\n";
+		inventoryPreviewTraceLines++;
+		File traceFile = new File(INVENTORY_PREVIEW_TRACE_PATH);
+		if (traceFile.open(File.MODE_WRITE))
+		{
+			traceFile.write(inventoryPreviewTrace);
+			traceFile.close();
+		}
+		else
+		{
+			System.log("[InventoryGlassTrace] Could not open " + INVENTORY_PREVIEW_TRACE_PATH);
+		}
+	}
+
 	public InventoryItem_Part( Inventory inv, int id )
 	{
 		super( inv );
@@ -160,6 +201,7 @@ public class InventoryItem_Part extends InventoryItem
 	public void show( InventoryPanel ip )
 	{
 		Part p = getPart();
+		logInventoryPreviewTrace( "ITEM-SHOW-ENTER", p );
 
 		if( p )
 		{
@@ -175,10 +217,19 @@ public class InventoryItem_Part extends InventoryItem
 	public void refreshGlassOpacityPreview()
 	{
 		Part p = getPart();
+		logInventoryPreviewTrace( "ITEM-REFRESH-ENTER", p );
 		if( p instanceof Window )
+		{
 			((Window)p).refreshGlassOpacityPreview();
+			logInventoryPreviewTrace( "WINDOW-REFRESH-RETURN", p );
+		}
 		else if( p instanceof Windshield )
+		{
 			((Windshield)p).refreshGlassOpacityPreview();
+			logInventoryPreviewTrace( "WINDSHIELD-REFRESH-RETURN", p );
+		}
+		else
+			logInventoryPreviewTrace( "ITEM-NOT-GLASS", p );
 	}
 
 	public void hide( InventoryPanel ip )
