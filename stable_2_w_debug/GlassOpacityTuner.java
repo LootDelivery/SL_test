@@ -350,6 +350,7 @@ public class GlassOpacityTuner
 				tintG = green;
 				tintB = blue;
 				appearanceCustomized = 1;
+				m.gadget.setValue(findTintPreset());
 			}
 			else
 			{
