@@ -553,7 +553,7 @@ public class GlassOpacityTuner
 
 class GlassTintDialog extends Dialog
 {
-	final static int CMD_CANCEL = 1;
+	final static int CMD_CANCEL = 0;
 	final static int CMD_PICK_COLOR = 1000;
 
 	String[] names;
