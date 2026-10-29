@@ -36,8 +36,9 @@ public class Part extends GameType
 	final static int MF_PROCHARGER2 = parts:0x0042r;
 	final static int MF_KN		= parts:0x0044r;
 
-	final static int SAVEFILEVERSION_PART = 2;
+	final static int SAVEFILEVERSION_PART = 3;
 	static int save_version = SAVEFILEVERSION_PART;
+	protected int file_ver = SAVEFILEVERSION_PART;
 
 
 	String	name = "<unnamed>";
@@ -117,7 +118,8 @@ public class Part extends GameType
 
 			//ToDo: ha nem jott letre, hibauzenet (pl. unknown part type), abort load, back to garage vagy menu
 			//if( part ) //amig nincs kesz, pukkanjon meg inkabb itt, kulonben mindenfele unexpected hibat okoz!!!
-				part.load( saveGame );
+				part.file_ver = save_version;
+			part.load( saveGame );
 
 			return part;
 		}

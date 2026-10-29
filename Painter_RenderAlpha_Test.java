@@ -1,9 +1,13 @@
-// EXPERIMENTAL CANDIDATE RENDER-INSTANCE PROBE
-// TEST ONLY: rename to Painter.java in the SLRR script source folder, compile, and back up the existing Painter first.
-// Clicking a part scans its ResourceRef graph for INSTANCE_RENDER (type 3) candidates
-// whose RenderRef.getTypeID() matches Part.getRenderType(), and logs their owner/depth.
-// A matching type ID alone does NOT prove the candidate is the object drawing the selected part.
-// This diagnostic is read-only: it does not modify colors, render types, meshes, textures, or SCX files.
+// EXPERIMENTAL RUNTIME WINDSHIELD OPACITY PROBE
+// TEST ONLY: back up the installed Painter.class/source before replacing it.
+// Makes a private copy of a render type known to use flags 640 (mode 1), replaces
+// its mesh with the selected part's mesh, and tries ARGB overrides on that part.
+// The test aborts before changing the part if the expected source resources have
+// the wrong resource types. These frontend IDs come from a known pack snapshot; the
+// Java API cannot verify the embedded flags, so a valid type check alone does not
+// guarantee mode 1 is present in every build. Leave Painter or exit the probe to
+// restore the original render type; do not save the car while the private type is active.
+// No SCX or texture file is edited.
 package java.game;
 
 import java.io.*;
@@ -130,14 +134,19 @@ public class Painter extends GameType implements GameState
 	String renderProbeLogBuffer = "";
 	final static String RENDER_PROBE_LOG_PATH = "slrr_render_probe.sdat";
 
-	// Temporary live-instance color test. RenderRef exposes no color getter,
-	// so this diagnostic uses opaque magenta and neutral white as its reset value.
-
+	// Runtime opacity probe. There is no RenderRef color getter, so neutral white is
+	// the best available reset for the temporary instance override.
 	Part alphaTestPart;
-	RenderRef alphaTestSource;
+	GameRef alphaTestTarget;
+	RenderRef alphaTestSourceType;
+	ResourceRef alphaTestSourceMesh;
+	ResourceRef alphaTestTargetMesh;
 	RenderRef alphaTestCopy;
-	int alphaTestOriginalRender;
-	int alphaTestPartId;
+	int alphaTestOriginalRender = 0;
+	int alphaTestOriginalMesh = 0;
+	int alphaTestPartId = 0;
+	int alphaTestInstanceId = 0;
+	int alphaTestStage = 0;
 
 	int brushColor=0xFFFFFFFF;
 	float decalRotation;
@@ -1710,133 +1719,255 @@ public class Painter extends GameType implements GameState
 	native void paintPart( GameRef cursor, int color );
 	native void xPaint( GameRef part );
 	
-	// Diagnostic cleanup only. The probe no longer changes live render colors.
-	void restoreRenderAlphaTest()
+	// Find only the render instances directly attached to this part. Earlier
+	// probes established that this is where the live instance is exposed; do not
+	// walk the ResourceRef package catalog looking for a material.
+	int findAlphaRenderInstance(GameRef target, int renderTypeID)
 	{
-		if (alphaTestCopy)
-			alphaTestCopy.destroy();
-
-		alphaTestPart = null;
-		alphaTestSource = null;
-		alphaTestCopy = null;
-		alphaTestOriginalRender = 0;
-		alphaTestPartId = 0;
+		if (!target) return 0;
+		ResourceRef child = target.getFirstChild();
+		for (int i = 0; child && i < 64; i++)
+		{
+			if (child.type() == 3)
+			{
+				RenderRef live = new RenderRef(child.id());
+				if (live.getTypeID() == renderTypeID)
+					return child.id();
+			}
+			child = child.getNextChild();
+		}
+		return 0;
 	}
 
-	// Read-only candidate scan. A matching render type ID may still belong to a different draw path.
-	void toggleRenderAlphaTest(GameRef target)
+	// Restore the part before destroying its private type. If setRenderType fails,
+	// keep the copy alive rather than risk leaving the part bound to a dead resource.
+	int restoreRenderAlphaTest()
 	{
-		if (!target)
+		if (!alphaTestCopy)
+			return 1;
+
+		int copyID = alphaTestCopy.id();
+		if (alphaTestPart && alphaTestPart.getRenderType() == copyID)
 		{
-			logRenderProbe("ignored null target");
-			return;
+			if (alphaTestInstanceId != 0)
+			{
+				RenderRef active = new RenderRef(alphaTestInstanceId);
+				active.setColor(0xFFFFFFFF);
+			}
+
+			alphaTestPart.setRenderType(alphaTestOriginalRender);
+			if (alphaTestPart.getRenderType() != alphaTestOriginalRender)
+			{
+				String error = "Opacity probe: failed to restore original render type "
+					+ alphaTestOriginalRender + "; temporary type kept alive.";
+				infoline.changeText(error);
+				logRenderProbe(error);
+				return 0;
+			}
+
+			if (alphaTestPart.getMesh() != alphaTestOriginalMesh)
+			{
+				String warning = "Opacity probe: render type restored, but Part.getMesh() "
+					+ "differs from the saved mesh ID. Check the part before saving.";
+				infoline.changeText(warning);
+				logRenderProbe(warning);
+			}
+		}
+		else if (alphaTestPart && alphaTestPart.getRenderType() != alphaTestOriginalRender)
+		{
+			// Some external action changed the part after this probe. Do not overwrite
+			// that newer choice with the type saved by this test.
+			logRenderProbe("Opacity probe: part render type changed externally; "
+				+ "leaving its current type untouched.");
 		}
 
-		if (target.getInfo(GameType.GII_CATEGORY) != GIR_CAT_PART)
+		alphaTestCopy.destroy();
+		alphaTestCopy = null;
+		alphaTestSourceType = null;
+		alphaTestSourceMesh = null;
+		alphaTestTargetMesh = null;
+		alphaTestPart = null;
+		alphaTestTarget = null;
+		alphaTestOriginalRender = 0;
+		alphaTestOriginalMesh = 0;
+		alphaTestPartId = 0;
+		alphaTestInstanceId = 0;
+		alphaTestStage = 0;
+		return 1;
+	}
+
+	// Paint Part mode click cycles through alpha 0x20, alpha 0x7F, alpha 0xFF,
+	// then restores the original render type. The runtime type is a duplicate of
+	// frontend:0x21r (the stock paintcan type with flags 640 in known installs),
+	// with its mesh entry replaced by the selected part's SCX mesh.
+	void toggleRenderAlphaTest(GameRef target)
+	{
+		if (!target || target.getInfo(GameType.GII_CATEGORY) != GIR_CAT_PART)
 		{
-			logRenderProbe("ignored non-part target id=" + target.id()
-				+ " type=" + target.type());
+			logRenderProbe("Opacity probe: select a vehicle part in Paint Part mode.");
 			return;
 		}
 
 		Object scriptInstance = target.getScriptInstance();
 		if (!(scriptInstance instanceof Part))
 		{
-			String error = "Render probe: target has no Part script instance";
+			String error = "Opacity probe: selected object has no Part script instance.";
+			infoline.changeText(error);
+			logRenderProbe(error);
+			return;
+		}
+		Part selected = (Part)scriptInstance;
+		int targetID = target.id();
+
+		// If already active on this part, advance the opacity level rather than
+		// creating another copy. A fourth click restores the original setup.
+		if (alphaTestCopy && alphaTestPartId == targetID
+			&& alphaTestPart && selected.getRenderType() == alphaTestCopy.id())
+		{
+			if (alphaTestStage >= 3)
+			{
+				if (restoreRenderAlphaTest() != 0)
+				{
+					String msg = "Opacity probe: original render type restored.";
+					infoline.changeText(msg);
+					logRenderProbe(msg);
+				}
+				return;
+			}
+
+			int instanceID = findAlphaRenderInstance(target, alphaTestCopy.id());
+			if (instanceID == 0)
+			{
+				String error = "Opacity probe: temporary render instance not found "
+					+ "directly under the selected Part; no further color change applied.";
+				infoline.changeText(error);
+				logRenderProbe(error);
+				return;
+			}
+
+			int color = 0xFF160D0D;
+			String colorHex = "FF160D0D";
+			if (alphaTestStage == 1)
+			{
+				color = 0x7F160D0D;
+				colorHex = "7F160D0D";
+			}
+			RenderRef active = new RenderRef(instanceID);
+			active.setColor(color);
+			alphaTestInstanceId = instanceID;
+			// Avoid postfix increment and bit-shift expressions in this diagnostic path:
+			// older SLRR VM builds can report a stack-access error for complex expressions.
+			if (alphaTestStage == 1)
+				alphaTestStage = 2;
+			else
+				alphaTestStage = 3;
+			String msg = "Opacity probe: applied setColor=0x" + colorHex + ".";
+			infoline.changeText(msg);
+			logRenderProbe(msg);
+			return;
+		}
+
+		// Do not stack runtime copies across different parts.
+		if (alphaTestCopy && restoreRenderAlphaTest() == 0)
+			return;
+
+		int originalRenderID = selected.getRenderType();
+		int originalMeshID = selected.getMesh();
+		if (originalRenderID == 0 || originalMeshID == 0)
+		{
+			String error = "Opacity probe: Part has no render type or mesh "
+				+ "(render=" + originalRenderID + ", mesh=" + originalMeshID + ").";
 			infoline.changeText(error);
 			logRenderProbe(error);
 			return;
 		}
 
-		Part selected = (Part)scriptInstance;
-		int targetID = target.id();
-		int targetKind = target.type();
-		int partRenderID = selected.getRenderType();
-		int partMeshID = selected.getMesh();
-		int partTextureID = selected.getTexture();
-
-		String info = "Render probe: part=" + targetID
-			+ " kind=" + targetKind + " partRT=" + partRenderID
-			+ " partMesh=" + partMeshID + " partTex=" + partTextureID;
-		String pathSummary = "";
-		String renderMatches = "";
-		String candidates = "";
-		int liveCount = 0;
-		int renderMatchCount = 0;
-		int nodesScanned = 0;
-		int[] rendersAtDepth = new int[5];
-
-		// Inspect the target and a few ancestors, checking each node and its children.
-		// This is read-only: no render resources are created or modified.
-		ResourceRef base = target;
-		for (int depth = 0; base && depth < 5; depth++)
+		// These IDs come from the known frontend render-type recipe:
+		// paintcan -> mesh 0x5E, flags 640 (0x280 = instance-color mode 1).
+		// Guard all three resources; different packs/builds should abort safely.
+		RenderRef sourceType = new RenderRef(frontend:0x0021r);
+		ResourceRef sourceMesh = new ResourceRef(frontend:0x005Er);
+		ResourceRef targetMesh = new ResourceRef(originalMeshID);
+		if (sourceType.type() != 14 || sourceMesh.type() != 5 || targetMesh.type() != 5)
 		{
-			int baseID = base.id();
-			int baseKind = base.type();
-			nodesScanned++;
-			if (pathSummary.length() < 90)
-				pathSummary += " #" + baseID + "t" + baseKind;
-
-			if (baseKind == 3)
-			{
-				RenderRef liveBase = new RenderRef(baseID);
-				int liveBaseTypeID = liveBase.getTypeID();
-				liveCount++;
-				rendersAtDepth[depth]++;
-				if (liveBaseTypeID == partRenderID)
-				{
-					renderMatchCount++;
-					if (renderMatches.length() < 260)
-						renderMatches += " #" + baseID + "->" + liveBaseTypeID
-							+ "(nodeDepth=" + depth + ")";
-				}
-				if (candidates.length() < 360)
-					candidates += " #" + baseID + "->" + liveBaseTypeID;
-			}
-
-			ResourceRef child = base.getFirstChild();
-			for (int i = 0; child && i < 48; i++)
-			{
-				int childID = child.id();
-				int childKind = child.type();
-
-				if (childKind == 3)
-				{
-					RenderRef liveChild = new RenderRef(childID);
-					int liveTypeID = liveChild.getTypeID();
-					liveCount++;
-					rendersAtDepth[depth]++;
-					if (liveTypeID == partRenderID)
-					{
-						renderMatchCount++;
-						if (renderMatches.length() < 260)
-							renderMatches += " #" + childID + "->" + liveTypeID
-								+ "(owner=#" + baseID + " ownerDepth=" + depth + ")";
-					}
-					if (candidates.length() < 360)
-						candidates += " #" + childID + "->" + liveTypeID;
-				}
-
-				child = child.getNextChild();
-			}
-
-			base = base.getParent();
+			String error = "Opacity probe aborted: expected frontend:0x21r to be "
+				+ "render type 14 and frontend:0x5Er / selected mesh to be mesh type 5; "
+				+ "got " + sourceType.type() + "/" + sourceMesh.type()
+				+ "/" + targetMesh.type() + ".";
+			infoline.changeText(error);
+			logRenderProbe(error);
+			return;
 		}
 
-		String depthCounts = "";
-		for (int i = 0; i < rendersAtDepth.length; i++)
-			depthCounts += " d" + i + "=" + rendersAtDepth[i];
+		// Load both geometries before changeResource so the native path can identify
+		// this as a mesh replacement rather than a texture replacement.
+		sourceMesh.load();
+		targetMesh.load();
 
-		info += " | path:" + pathSummary + " | nodes=" + nodesScanned
-			+ " liveR=" + liveCount + " rtMatches=" + renderMatchCount
-			+ " rendersByDepth:" + depthCounts;
-		if (renderMatches.length() > 0)
-			info += " RT_MATCH:" + renderMatches;
-		if (candidates.length() > 0)
-			info += " candidates:" + candidates;
+		RenderRef privateType = new RenderRef();
+		privateType.duplicate(sourceType);
+		if (privateType.id() == 0 || privateType.type() != 14)
+		{
+			if (privateType.id() != 0) privateType.destroy();
+			String error = "Opacity probe aborted: could not duplicate the source render type.";
+			infoline.changeText(error);
+			logRenderProbe(error);
+			return;
+		}
 
-		infoline.changeText(info);
-		logRenderProbe(info);
+		// Keep enough state to restore even if a later validation fails.
+		alphaTestPart = selected;
+		alphaTestTarget = target;
+		alphaTestSourceType = sourceType;
+		alphaTestSourceMesh = sourceMesh;
+		alphaTestTargetMesh = targetMesh;
+		alphaTestCopy = privateType;
+		alphaTestOriginalRender = originalRenderID;
+		alphaTestOriginalMesh = originalMeshID;
+		alphaTestPartId = targetID;
+		alphaTestInstanceId = 0;
+		alphaTestStage = 0;
+
+		privateType.changeResource(sourceMesh, targetMesh);
+		selected.setRenderType(privateType.id());
+
+		if (selected.getRenderType() != privateType.id()
+			|| selected.getMesh() != originalMeshID)
+		{
+			String error = "Opacity probe aborted: copied type did not bind as expected "
+				+ "(render=" + selected.getRenderType()
+				+ ", mesh=" + selected.getMesh()
+				+ ", expected mesh=" + originalMeshID + ").";
+			infoline.changeText(error);
+			logRenderProbe(error);
+			restoreRenderAlphaTest();
+			return;
+		}
+
+		int instanceID = findAlphaRenderInstance(target, privateType.id());
+		if (instanceID == 0)
+		{
+			String error = "Opacity probe aborted: Part.setRenderType succeeded, but "
+				+ "no direct child RenderRef references the private type. Restoring.";
+			infoline.changeText(error);
+			logRenderProbe(error);
+			restoreRenderAlphaTest();
+			return;
+		}
+
+		RenderRef active = new RenderRef(instanceID);
+		active.setColor(0x20160D0D);
+		alphaTestInstanceId = instanceID;
+		alphaTestStage = 1;
+		String msg = "Opacity probe: private render type bound. "
+			+ "Stage 1: setColor=0x20160D0D (ARGB alpha=32/255). "
+			+ "Click the same part for alpha 127, then 255, then restore.";
+		infoline.changeText(msg);
+		logRenderProbe(msg + " part=" + targetID
+			+ " originalRT=" + originalRenderID
+			+ " privateRT=" + privateType.id()
+			+ " originalMesh=" + originalMeshID
+			+ " instance=" + instanceID);
 	}
 
 	public void beginPaint( int cursor_id )
