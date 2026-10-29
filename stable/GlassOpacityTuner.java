@@ -263,6 +263,11 @@ public class GlassOpacityTuner
 
 	public void buildTuningMenu( Menu m, Part target )
 	{
+		buildTuningMenu(m, target, null);
+	}
+
+	public void buildTuningMenu( Menu m, Part target, Osd tuningOsd )
+	{
 		oldOpacity = opacity;
 		oldTintR = tintR;
 		oldTintG = tintG;
@@ -273,20 +278,53 @@ public class GlassOpacityTuner
 			tuningHadOverride = 0;
 
 		int percent = snapPercentToFive(opacityPercent());
-		Slider opacitySlider = m.addItem( "Glass opacity", CMD_GLASS_OPACITY,
-			percent, 0.0, 100.0, 21, null );
+		Slider opacitySlider;
+		if (tuningOsd)
+		{
+			Style sliderStyle = new Style(0.45, 0.06, Frontend.smallFont,
+				Text.ALIGN_CENTER, new ResourceRef(Osd.RID_SLD_BACK));
+			Style knobStyle = new Style(0.04, 0.05, Frontend.smallFont,
+				Text.ALIGN_RIGHT, new ResourceRef(Osd.RID_SLD_KNOB));
+			opacitySlider = tuningOsd.createSlider(sliderStyle, knobStyle,
+				0.0, 0.35, "Glass opacity", CMD_GLASS_OPACITY,
+				percent, 0.0, 100.0, 21);
+		}
+		else
+		{
+			opacitySlider = m.addItem( "Glass opacity", CMD_GLASS_OPACITY,
+				percent, 0.0, 100.0, 21, null );
+		}
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
 		String[] tintNames = getTintNames();
 		int selectedTint = findTintPreset();
 		glassTintButtons = new Button[tintNames.length];
+		Menu leftChoices = null;
+		Menu rightChoices = null;
+		if (tuningOsd)
+		{
+			Style itemStyle = new Style(0.15, 0.075, Frontend.smallFont,
+				Text.ALIGN_LEFT, Osd.RRT_TEST);
+			leftChoices = tuningOsd.createMenu(itemStyle, -0.2, -0.30, 0, Osd.MD_VERTICAL);
+			rightChoices = tuningOsd.createMenu(itemStyle, 0.1, -0.30, 0, Osd.MD_VERTICAL);
+		}
 		for (int i = 0; i < tintNames.length; i++)
 		{
 			String label = tintNames[i];
 			if (selectedTint == i + 1)
 				label = "* " + label;
-			glassTintButtons[i] = m.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i,
-				"Set glass color to " + tintNames[i]);
+			if (tuningOsd)
+			{
+				if (i < 8)
+					glassTintButtons[i] = leftChoices.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i);
+				else
+					glassTintButtons[i] = rightChoices.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i);
+			}
+			else
+			{
+				glassTintButtons[i] = m.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i,
+					"Set glass color to " + tintNames[i]);
+			}
 		}
 	}
 
