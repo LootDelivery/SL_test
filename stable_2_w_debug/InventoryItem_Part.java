@@ -1,6 +1,5 @@
 package java.game;
 
-import java.io.*;
 import java.util.*;
 import java.util.resource.*;
 import java.render.*;
