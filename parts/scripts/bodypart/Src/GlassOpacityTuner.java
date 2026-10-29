@@ -1,5 +1,6 @@
 package java.game.parts.bodypart;
 
+import java.io.*;
 import java.util.*;
 import java.util.resource.*;
 import java.render.*;
@@ -11,10 +12,11 @@ public class GlassOpacityTuner
 {
 	static final int CMD_GLASS_OPACITY = 9301;
 
-	// Opacity is saved with the part. The private RenderRef ID is runtime-only and is rebuilt on load.
+	// The chosen alpha is persisted in the part record. Runtime render handles are rebuilt after installation.
 	int opacity = 127;
 	int oldOpacity = 127;
 	int hasOpacityOverride = 0;
+	int restorePending = 0;
 	int tuningHadOverride = 0;
 
 	RenderRef sourceTypeHandle;
@@ -25,6 +27,46 @@ public class GlassOpacityTuner
 	int originalRenderType = 0;
 	int originalMesh = 0;
 	int renderInstance = 0;
+
+	// Version-3 part payload: marker + alpha. Keep runtime RenderRef IDs out of saves.
+	public void save( File saveGame )
+	{
+		int savedOverride = 0;
+		if (hasOpacityOverride != 0 || restorePending != 0)
+			savedOverride = 1;
+
+		saveGame.write( savedOverride );
+		saveGame.write( opacity );
+	}
+
+	public void load( File saveGame )
+	{
+		int savedOverride = saveGame.readInt();
+		int savedOpacity = saveGame.readInt();
+
+		if (savedOpacity < 0) savedOpacity = 0;
+		if (savedOpacity > 255) savedOpacity = 255;
+
+		opacity = savedOpacity;
+		oldOpacity = savedOpacity;
+		hasOpacityOverride = 0;
+		restorePending = (savedOverride != 0) ? 1 : 0;
+		tuningHadOverride = 0;
+	}
+
+	// Called after the part has been installed into the scene graph.
+	// Loading a nested part happens before the parent installs it, so rebuilding
+	// the temporary render type from load() would be too early.
+	public void onInstalled( Part target )
+	{
+		if (restorePending != 0)
+		{
+			if (applyOpacity(target, opacity))
+				restorePending = 0;
+			else
+				System.print("Glass opacity: saved override will remain pending; install-time render instance was unavailable.");
+		}
+	}
 
 	public void buildTuningMenu( Menu m, Part target )
 	{
