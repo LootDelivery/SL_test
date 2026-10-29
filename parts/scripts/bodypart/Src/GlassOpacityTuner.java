@@ -91,7 +91,7 @@ public class GlassOpacityTuner
 		if (!ensureOverride(target))
 			return 0;
 
-		int instanceID = findGlassRenderInstance(target, privateTypeHandle.id());
+		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
 			System.print("Glass opacity: live render instance not found; restoring override.");
@@ -170,7 +170,7 @@ public class GlassOpacityTuner
 			return 0;
 		}
 
-		int instanceID = findGlassRenderInstance(target, privateType.id());
+		int instanceID = findGlassRenderInstance(target.id(), privateType.id());
 		if (instanceID == 0)
 		{
 			System.print("Glass opacity: private type bound but live render instance was not found; restoring.");
@@ -182,8 +182,9 @@ public class GlassOpacityTuner
 		return 1;
 	}
 
-	int findGlassRenderInstance( GameRef target, int renderTypeID )
+	int findGlassRenderInstance( int targetID, int renderTypeID )
 	{
+		GameRef target = new GameRef(targetID);
 		if (!target) return 0;
 
 		ResourceRef child = target.getFirstChild();
@@ -208,7 +209,7 @@ public class GlassOpacityTuner
 		int copyID = privateTypeHandle.id();
 		if (target.getRenderType() == copyID)
 		{
-			int instanceID = findGlassRenderInstance(target, copyID);
+			int instanceID = findGlassRenderInstance(target.id(), copyID);
 			if (instanceID != 0)
 			{
 				RenderRef active = new RenderRef(instanceID);
