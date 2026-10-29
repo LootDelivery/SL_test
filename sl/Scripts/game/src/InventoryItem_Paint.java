@@ -59,18 +59,10 @@ public class InventoryItem_Paint extends InventoryItem
 		String storeString = Integer.toHexString( input ).token( 1, "x" );
 		String prepareString = "";
 		int i;
-		if( storeString.token(i, "123456789abcdef").length() > 2 )
+		for( i = storeString.length(); i < 6; i++ )
 		{
-			int newzeros = storeString.token(0, "123456789abcdef").length()-2;
-			for( i = 0; i < newzeros; i++ )
-			{
-				prepareString = prepareString + "0";
-			}
+			prepareString = prepareString + "0";
 		}
-		for( i = 0; i <= 2; i++)
-		{
-			prepareString = prepareString + ( storeString.token(i, "0") ) + ( storeString.token(1+i, "123456789abcdef") );
-		}
-		return prepareString;
+		return prepareString + storeString;
 	}
 }
