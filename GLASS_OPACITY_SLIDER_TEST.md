@@ -6,30 +6,34 @@ This revision builds on the working version-4 persistence branch.
 
 ## Changes
 
-- **Opacity:** remains a 0–100% selector in 5% increments.
-- **Tint:** replaces the three RGB sliders with a named preset selector. Its event handler reads the selected index from `m.gadget.osd.sliderValue`; the list item is a `Gadget`, not a `Slider`, so no `Slider` cast is used: Custom/current, Stock, Black, Charcoal, Gray, Silver, White, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, and Brown.
-- **Persistence:** the RGB triplet is still written using the existing version-4 part payload. No further save-format bump is required.
-- **Inventory preview:** adds a refresh callback to `Window` and `Windshield`, and calls it from `InventoryItem_Part.show()` after the inventory preview camera and light are created. This reapplies the saved alpha/RGB to the preview's current live render instance.
+- **Opacity:** 0–100% selector in 5% increments.
+- **Tint palette:** named presets: Custom/current, Stock, Black, Charcoal, Gray, Silver, White, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, Brown.
+- **Persistence:** existing version-4 part payload stores alpha and RGB.
+- **Inventory preview:** helper methods exist on Window/Windshield, but no InventoryItem_Part replacement is included. The public source snapshot was incompatible with the user's installed version.
 
-## Files
+## Files to update
 
 - `parts/scripts/bodypart/Src/GlassOpacityTuner.java`
 - `parts/scripts/bodypart/Src/Window.java`
 - `parts/scripts/bodypart/Src/Windshield.java`
-- `parts/scripts/src/Part.java` (same version-4 file as the previously working branch; no further change intended)
-- `sl/Scripts/game/src/InventoryItem_Part.java` (inventory preview hook; based on the public stock script snapshot)
+- Keep the known-working version-4 `parts/scripts/src/Part.java`.
+
+## Recovery from the incompatible InventoryItem_Part.java
+
+If you copied the `InventoryItem_Part.java` from the previous version of this branch, restore your own game's original file from a backup or reinstall/restore the matching file from your exact game/source distribution. Do not use the public snapshot from this branch: it referenced `IIT_PART` and `type` fields absent from the user's installed API.
+
+Do not replace the entire installed InventoryItem_Part.java with a different game's source. Inventory-preview support must be integrated as a minimal patch into the exact local version after comparing its imports, `show()` method, and part fields.
 
 ## Test on a backed-up game/save
 
-1. Copy the updated `GlassOpacityTuner.java`, `Window.java`, and `Windshield.java`.
-2. Merge the import and two refresh calls from the supplied `InventoryItem_Part.java` into your installed version. If your local file differs from the supplied snapshot, do not replace your whole file blindly.
-3. Do **not** downgrade `Part.java`: keep the version-4 save format from the working tint-controls branch.
-4. Load a current save, check purchase/load, set tint and opacity, save, exit, and reload.
-5. Put a tuned windshield/window into the parts inventory and inspect it before installing it on a car. Then install it and verify its appearance remains the same.
-6. Test Cancel in the tuning menu.
+1. Restore the matching local `InventoryItem_Part.java` before testing; compile it with the rest of the scripts.
+2. Compile the three part scripts and keep Part.java at version 4.
+3. Load a current save, verify car purchase and part removal.
+4. Change opacity and tint, save, fully exit, and reload.
+5. Test the palette selector, then test Cancel.
 
 ## Limitations
 
-- This has not been compiled or tested in-game by the authoring environment; the first run must use a backup.
-- The inventory hook runs after the preview camera/light is created. If a particular build creates the render instance later than this, the log may report that the preview instance was not found; the hook timing will then need adjusting against that build.
-- Reflection strength is still not independently adjustable. The tested `RenderRef.setColor()` path controls ARGB tint/alpha, not the material's `env_factor`.
+- Not compiled/tested in-game in this authoring environment.
+- Inventory preview remains **unfixed** until the callback is integrated into the exact local `InventoryItem_Part.java` and tested. Do not treat the preview hook as complete.
+- Reflection strength remains separate work; `RenderRef.setColor()` changes ARGB, not material `env_factor`.
