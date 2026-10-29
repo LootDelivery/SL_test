@@ -280,9 +280,7 @@ public class GlassOpacityTuner
 			percent, 0.0, 100.0, 21, null );
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
-		String[] tintNames = getTintNames();
-		int selectedTint = findTintPreset();
-		m.addItem( "Glass color", CMD_GLASS_TINT, selectedTint, 0, 1, tintNames.length, null ).setValues(tintNames);
+		m.addItem( "Next glass color", CMD_GLASS_TINT);
 	}
 
 	public void handleMessage( Event m, Part target )
@@ -312,30 +310,18 @@ public class GlassOpacityTuner
 		else if (m.cmd == CMD_GLASS_TINT)
 		{
 			previous = findTintPreset();
-			requested = clampTintPreset((int)m.gadget.osd.sliderValue);
+			requested = previous + 1;
+			if (requested > 15) requested = 1;
 
-			// Index 0 means keep the existing custom RGB tint unchanged.
-			if (requested == 0)
-			{
-				// Keep the current preset if no valid choice was made.
-			}
-			else
-			{
-				int red = tintRed(requested);
-				int green = tintGreen(requested);
-				int blue = tintBlue(requested);
+			int red = tintRed(requested);
+			int green = tintGreen(requested);
+			int blue = tintBlue(requested);
 
-				if (applyAppearance(target, opacity, red, green, blue))
-				{
-					tintR = red;
-					tintG = green;
-					tintB = blue;
-					// The switch gadget updates its own displayed selection.
-				}
-				else
-				{
-					m.gadget.setValue(previous);
-				}
+			if (applyAppearance(target, opacity, red, green, blue))
+			{
+				tintR = red;
+				tintG = green;
+				tintB = blue;
 			}
 		}
 	}
