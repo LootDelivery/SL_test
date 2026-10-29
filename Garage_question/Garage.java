@@ -1019,7 +1019,11 @@ public class Garage extends Scene implements GameState
 		else
 		if( cmd == CMD_SAVEGAME )
 		{
+			// Move the temporary mechanic inventory back to the persistent player inventory
+			// before saving. Restore the current garage filters after the save.
+			mechanic.flushInventory();
 			GameLogic.autoSaveQuiet();
+			mechanic.filterInventory( filterEngine, filterBody, filterRGear );
 			new SfxRef( Frontend.SFX_MONEY ).play();
 			map = new GroundRef( garageID[garageIndex] );
 			stuff = new RenderRef( map, garageStuffID[garageIndex], null );
