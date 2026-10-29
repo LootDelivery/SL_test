@@ -27,6 +27,7 @@ public class GlassOpacityTuner
 	int tuningHadOverride = 0;
 	int previewRefreshInProgress = 0;
 	int previewRetryLogged = 0;
+	int restoreDiagnosticLogged = 0;
 
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
@@ -49,6 +50,7 @@ public class GlassOpacityTuner
 		saveGame.write( tintR );
 		saveGame.write( tintG );
 		saveGame.write( tintB );
+		System.print("Glass opacity SAVE: override=" + savedOverride + " alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
 	}
 
 	public void load( File saveGame, int version )
@@ -76,6 +78,8 @@ public class GlassOpacityTuner
 		oldTintR = tintR;
 		oldTintG = tintG;
 		oldTintB = tintB;
+		restoreDiagnosticLogged = 0;
+		System.print("Glass opacity LOAD: version=" + version + " override=" + savedOverride + " alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
 		hasOpacityOverride = 0;
 		if (savedOverride != 0)
 			restorePending = 1;
@@ -234,6 +238,12 @@ public class GlassOpacityTuner
 		// The inventory creates/rebuilds its live render child after show() can be called.
 		// Keep a pending override alive and retry from InventoryPanel.focusHook().
 		previewRefreshInProgress = 1;
+
+		if (restorePending != 0 && restoreDiagnosticLogged == 0)
+		{
+			System.print("Glass opacity PREVIEW restore pending: alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
+			restoreDiagnosticLogged = 1;
+		}
 
 		if (restorePending != 0 || hasOpacityOverride == 0)
 		{
