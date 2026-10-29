@@ -101,7 +101,9 @@ public class GlassOpacityTuner
 
 		// The tested windshield SCX has DiffuseColor RGB (22, 13, 13).
 		// Alpha is controlled from 0 to 255. Other glass tint RGBs may need separate handling.
-		int argb = (alpha << 24) | 0x00160D0D;
+		// Avoid bit-shift expressions: this older SLRR VM has shown stack errors in shift-heavy expressions.
+		// 0x160D0D = 1445133; multiply alpha by 2^24 to build the ARGB high byte.
+		int argb = alpha * 16777216 + 1445133;
 		RenderRef active = new RenderRef(instanceID);
 		active.setColor(argb);
 		renderInstance = instanceID;
