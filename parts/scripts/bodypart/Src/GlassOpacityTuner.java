@@ -398,7 +398,18 @@ public class GlassOpacityTuner
 		if (privateTypeHandle)
 		{
 			if (target.getRenderType() == privateTypeHandle.id())
+			{
+				// During inventory preview the part can receive its temporary type
+				// before the engine creates/rebuilds its live render child. On later
+				// retries, rebind the type if no child of that type exists yet.
+				if (previewRefreshInProgress != 0 &&
+					findGlassRenderInstance(target.id(), privateTypeHandle.id()) == 0)
+				{
+					target.setRenderType(originalRenderType);
+					target.setRenderType(privateTypeHandle.id());
+				}
 				return 1;
+			}
 
 			// Do not silently overwrite a render-type change made by another system.
 			return 0;
