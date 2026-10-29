@@ -3,8 +3,11 @@
 // Makes a private copy of a render type known to use flags 640 (mode 1), replaces
 // its mesh with the selected part's mesh, and tries ARGB overrides on that part.
 // The test aborts before changing the part if the expected source resources have
-// the wrong resource types. It never writes to SCX files or texture files.
-// This diagnostic is read-only: it does not modify colors, render types, meshes, textures, or SCX files.
+// the wrong resource types. These frontend IDs come from a known pack snapshot; the
+// Java API cannot verify the embedded flags, so a valid type check alone does not
+// guarantee mode 1 is present in every build. Leave Painter or exit the probe to
+// restore the original render type; do not save the car while the private type is active.
+// No SCX or texture file is edited.
 package java.game;
 
 import java.io.*;
