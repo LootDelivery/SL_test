@@ -37,7 +37,7 @@ public class GlassOpacityTuner
 	// Static buffer keeps messages from different Window/Windshield instances.
 	static String previewLogBuffer = "";
 	static int previewLogLineCount = 0;
-	final static String PREVIEW_LOG_PATH = "slrr_render_probe.sdat";
+	final static String PREVIEW_LOG_PATH = "slrr_glass_preview_debug.sdat";
 
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
