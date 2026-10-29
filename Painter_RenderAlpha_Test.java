@@ -138,6 +138,9 @@ public class Painter extends GameType implements GameState
 	// the best available reset for the temporary instance override.
 	Part alphaTestPart;
 	GameRef alphaTestTarget;
+	RenderRef alphaTestSourceType;
+	ResourceRef alphaTestSourceMesh;
+	ResourceRef alphaTestTargetMesh;
 	RenderRef alphaTestCopy;
 	int alphaTestOriginalRender = 0;
 	int alphaTestOriginalMesh = 0;
@@ -1780,6 +1783,9 @@ public class Painter extends GameType implements GameState
 
 		alphaTestCopy.destroy();
 		alphaTestCopy = null;
+		alphaTestSourceType = null;
+		alphaTestSourceMesh = null;
+		alphaTestTargetMesh = null;
 		alphaTestPart = null;
 		alphaTestTarget = null;
 		alphaTestOriginalRender = 0;
@@ -1909,6 +1915,9 @@ public class Painter extends GameType implements GameState
 		// Keep enough state to restore even if a later validation fails.
 		alphaTestPart = selected;
 		alphaTestTarget = target;
+		alphaTestSourceType = sourceType;
+		alphaTestSourceMesh = sourceMesh;
+		alphaTestTargetMesh = targetMesh;
 		alphaTestCopy = privateType;
 		alphaTestOriginalRender = originalRenderID;
 		alphaTestOriginalMesh = originalMeshID;
