@@ -312,12 +312,12 @@ public class GlassOpacityTuner
 		else if (m.cmd == CMD_GLASS_TINT)
 		{
 			previous = findTintPreset();
-			requested = clampTintPreset((int)((Slider)m.gadget).value);
+			requested = clampTintPreset((int)m.gadget.osd.sliderValue);
 
 			// Index 0 means keep the existing custom RGB tint unchanged.
 			if (requested == 0)
 			{
-				((Slider)m.gadget).setValue(previous);
+				m.gadget.setValue(previous);
 			}
 			else
 			{
@@ -330,11 +330,11 @@ public class GlassOpacityTuner
 					tintR = red;
 					tintG = green;
 					tintB = blue;
-					((Slider)m.gadget).setValue(requested);
+					m.gadget.setValue(requested);
 				}
 				else
 				{
-					((Slider)m.gadget).setValue(previous);
+					m.gadget.setValue(previous);
 				}
 			}
 		}
