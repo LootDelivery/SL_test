@@ -25,6 +25,8 @@ public class GlassOpacityTuner
 	int hasOpacityOverride = 0;
 	int restorePending = 0;
 	int tuningHadOverride = 0;
+	int previewRefreshInProgress = 0;
+	int previewRetryLogged = 0;
 
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
@@ -229,17 +231,29 @@ public class GlassOpacityTuner
 	// Moving a part between the car and inventory can recreate its child render instance.
 	public void onInventoryPreview( Part target )
 	{
+		// The inventory creates/rebuilds its live render child after show() can be called.
+		// Keep a pending override alive and retry from InventoryPanel.focusHook().
+		previewRefreshInProgress = 1;
+
 		if (restorePending != 0 || hasOpacityOverride == 0)
 		{
 			if (restorePending != 0 && applyAppearance(target, opacity, tintR, tintG, tintB))
+			{
 				restorePending = 0;
+				previewRetryLogged = 0;
+			}
+			previewRefreshInProgress = 0;
 			return;
 		}
 
 		if (!privateTypeHandle)
 		{
 			if (applyAppearance(target, opacity, tintR, tintG, tintB))
+			{
 				restorePending = 0;
+				previewRetryLogged = 0;
+			}
+			previewRefreshInProgress = 0;
 			return;
 		}
 
@@ -249,19 +263,27 @@ public class GlassOpacityTuner
 		else if (currentType != privateTypeHandle.id())
 		{
 			System.print("Glass opacity: preview render type was changed externally; leaving it untouched.");
+			previewRefreshInProgress = 0;
 			return;
 		}
 
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
-			System.print("Glass opacity: inventory preview render instance not found yet.");
+			if (previewRetryLogged == 0)
+			{
+				System.print("Glass opacity: inventory preview render instance not ready; will retry.");
+				previewRetryLogged = 1;
+			}
+			previewRefreshInProgress = 0;
 			return;
 		}
 
 		RenderRef active = new RenderRef(instanceID);
 		active.setColor(packAppearanceColor(opacity, tintR, tintG, tintB));
 		renderInstance = instanceID;
+		previewRetryLogged = 0;
+		previewRefreshInProgress = 0;
 	}
 
 	public void buildTuningMenu( Menu m, Part target )
@@ -360,6 +382,15 @@ public class GlassOpacityTuner
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
+			if (previewRefreshInProgress != 0)
+			{
+				if (previewRetryLogged == 0)
+				{
+					System.print("Glass opacity: inventory preview render instance not ready; will retry.");
+					previewRetryLogged = 1;
+				}
+				return 0;
+			}
 			System.print("Glass opacity: live render instance not found; restoring override.");
 			restoreOverride(target);
 			return 0;
@@ -372,6 +403,7 @@ public class GlassOpacityTuner
 		active.setColor(argb);
 		renderInstance = instanceID;
 		hasOpacityOverride = 1;
+		previewRetryLogged = 0;
 		return 1;
 	}
 
@@ -440,6 +472,8 @@ public class GlassOpacityTuner
 		int instanceID = findGlassRenderInstance(target.id(), privateType.id());
 		if (instanceID == 0)
 		{
+			if (previewRefreshInProgress != 0)
+				return 1; // Keep the temporary type/resources alive for the next preview refresh.
 			System.print("Glass opacity: private type bound but live render instance was not found; restoring.");
 			restoreOverride(target);
 			return 0;
