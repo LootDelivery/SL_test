@@ -35,11 +35,6 @@ public class Window extends BodyPart
 		glassOpacityTuner.buildTuningMenu(m, this);
 	}
 
-	public void buildTuningMenu( Menu m, java.render.Osd tuningOsd )
-	{
-		glassOpacityTuner.buildTuningMenu(m, this, tuningOsd);
-	}
-
 	public void handleMessage( Event m )
 	{
 		glassOpacityTuner.handleMessage(m, this);
