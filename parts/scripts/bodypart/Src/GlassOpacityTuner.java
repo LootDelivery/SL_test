@@ -94,7 +94,7 @@ public class GlassOpacityTuner
 		int instanceID = findGlassRenderInstance(target, privateTypeHandle.id());
 		if (instanceID == 0)
 		{
-			System.print("Glass opacity: live render instance not found; restoring override.", System.PF_WARNING);
+			System.print("Glass opacity: live render instance not found; restoring override.");
 			restoreOverride(target);
 			return 0;
 		}
@@ -116,7 +116,7 @@ public class GlassOpacityTuner
 				return 1;
 
 			// Do not silently overwrite a render-type change made by another system.
-			System.print("Glass opacity: render type changed externally; aborting override.", System.PF_WARNING);
+			System.print("Glass opacity: render type changed externally; aborting override.");
 			return 0;
 		}
 
@@ -124,7 +124,7 @@ public class GlassOpacityTuner
 		int originalMeshID = target.getMesh();
 		if (originalRenderID == 0 || originalMeshID == 0)
 		{
-			System.print("Glass opacity: part has no render type or mesh.", System.PF_WARNING);
+			System.print("Glass opacity: part has no render type or mesh.");
 			return 0;
 		}
 
@@ -136,7 +136,7 @@ public class GlassOpacityTuner
 
 		if (sourceType.type() != 14 || sourceMesh.type() != 5 || targetMesh.type() != 5)
 		{
-			System.print("Glass opacity: expected render type/mesh resource types are unavailable.", System.PF_WARNING);
+			System.print("Glass opacity: expected render type/mesh resource types are unavailable.");
 			return 0;
 		}
 
@@ -148,7 +148,7 @@ public class GlassOpacityTuner
 		if (privateType.id() == 0 || privateType.type() != 14)
 		{
 			if (privateType.id() != 0) privateType.destroy();
-			System.print("Glass opacity: failed to duplicate the source render type.", System.PF_WARNING);
+			System.print("Glass opacity: failed to duplicate the source render type.");
 			return 0;
 		}
 
@@ -165,7 +165,7 @@ public class GlassOpacityTuner
 
 		if (target.getRenderType() != privateType.id() || target.getMesh() != originalMeshID)
 		{
-			System.print("Glass opacity: private render type did not bind as expected; restoring.", System.PF_WARNING);
+			System.print("Glass opacity: private render type did not bind as expected; restoring.");
 			restoreOverride(target);
 			return 0;
 		}
@@ -173,7 +173,7 @@ public class GlassOpacityTuner
 		int instanceID = findGlassRenderInstance(target, privateType.id());
 		if (instanceID == 0)
 		{
-			System.print("Glass opacity: private type bound but live render instance was not found; restoring.", System.PF_WARNING);
+			System.print("Glass opacity: private type bound but live render instance was not found; restoring.");
 			restoreOverride(target);
 			return 0;
 		}
@@ -218,16 +218,16 @@ public class GlassOpacityTuner
 			target.setRenderType(originalRenderType);
 			if (target.getRenderType() != originalRenderType)
 			{
-				System.print("Glass opacity: failed to restore original render type; keeping temporary resources alive.", System.PF_WARNING);
+				System.print("Glass opacity: failed to restore original render type; keeping temporary resources alive.");
 				return 0;
 			}
 
 			if (target.getMesh() != originalMesh)
-				System.print("Glass opacity: original type restored, but mesh ID differs from its saved ID.", System.PF_WARNING);
+				System.print("Glass opacity: original type restored, but mesh ID differs from its saved ID.");
 		}
 		else if (target.getRenderType() != originalRenderType)
 		{
-			System.print("Glass opacity: render type changed externally; leaving it untouched and keeping temporary resources alive.", System.PF_WARNING);
+			System.print("Glass opacity: render type changed externally; leaving it untouched and keeping temporary resources alive.");
 			return 0;
 		}
 
