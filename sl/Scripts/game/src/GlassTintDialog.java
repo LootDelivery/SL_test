@@ -19,7 +19,7 @@ public class GlassTintDialog extends Dialog
 	public GlassTintDialog( String[] options, int selectedPreset )
 	{
 		super(GameLogic.player.controller,
-			Dialog.DF_WIDE|Dialog.DF_MODAL|Dialog.DF_DEFAULTBG|Dialog.DF_DARKEN,
+			Dialog.DF_WIDE|Dialog.DF_MODAL|Dialog.DF_DEFAULTBG|Dialog.DF_DARKEN|Dialog.DF_TOPPRI,
 			"GLASS COLOR", "CANCEL");
 
 		escapeCmd = CMD_CANCEL;
@@ -27,9 +27,9 @@ public class GlassTintDialog extends Dialog
 		currentPreset = selectedPreset;
 		osd.globalHandler = this;
 
-		// Two compact columns keep all 15 options inside the dialog.
-		Menu leftChoices = osd.createMenu(itemStyle, -0.65, 0.30, 0, Osd.MD_VERTICAL);
-		Menu rightChoices = osd.createMenu(itemStyle, 0.35, 0.30, 0, Osd.MD_VERTICAL);
+		// Two centered columns; top priority keeps this child dialog above the tuning window.
+		Menu leftChoices = osd.createMenu(itemStyle, -0.48, 0.42, 0, Osd.MD_VERTICAL);
+		Menu rightChoices = osd.createMenu(itemStyle, 0.03, 0.42, 0, Osd.MD_VERTICAL);
 		for (int i = 0; i < names.length; i++)
 		{
 			String label = names[i];
