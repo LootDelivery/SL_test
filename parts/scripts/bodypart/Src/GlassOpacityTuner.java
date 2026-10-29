@@ -25,8 +25,6 @@ public class GlassOpacityTuner
 	int hasOpacityOverride = 0;
 	int restorePending = 0;
 	int tuningHadOverride = 0;
-	int previewRefreshInProgress = 0;
-	int previewRetryLogged = 0;
 
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
@@ -221,9 +219,7 @@ public class GlassOpacityTuner
 		if (restorePending != 0)
 		{
 			if (applyAppearance(target, opacity, tintR, tintG, tintB))
-			{
 				restorePending = 0;
-			}
 		}
 	}
 
@@ -231,30 +227,17 @@ public class GlassOpacityTuner
 	// Moving a part between the car and inventory can recreate its child render instance.
 	public void onInventoryPreview( Part target )
 	{
-		// The inventory creates/rebuilds its live render child after show() can be called.
-		// Keep a pending override alive and retry from InventoryPanel.focusHook().
-		previewRefreshInProgress = 1;
-
-
 		if (restorePending != 0 || hasOpacityOverride == 0)
 		{
 			if (restorePending != 0 && applyAppearance(target, opacity, tintR, tintG, tintB))
-			{
 				restorePending = 0;
-				previewRetryLogged = 0;
-			}
-			previewRefreshInProgress = 0;
 			return;
 		}
 
 		if (!privateTypeHandle)
 		{
 			if (applyAppearance(target, opacity, tintR, tintG, tintB))
-			{
 				restorePending = 0;
-				previewRetryLogged = 0;
-			}
-			previewRefreshInProgress = 0;
 			return;
 		}
 
@@ -263,26 +246,18 @@ public class GlassOpacityTuner
 			target.setRenderType(privateTypeHandle.id());
 		else if (currentType != privateTypeHandle.id())
 		{
-			previewRefreshInProgress = 0;
 			return;
 		}
 
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
-			if (previewRetryLogged == 0)
-			{
-				previewRetryLogged = 1;
-			}
-			previewRefreshInProgress = 0;
 			return;
 		}
 
 		RenderRef active = new RenderRef(instanceID);
 		active.setColor(packAppearanceColor(opacity, tintR, tintG, tintB));
 		renderInstance = instanceID;
-		previewRetryLogged = 0;
-		previewRefreshInProgress = 0;
 	}
 
 	public void buildTuningMenu( Menu m, Part target )
@@ -381,14 +356,6 @@ public class GlassOpacityTuner
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
-			if (previewRefreshInProgress != 0)
-			{
-				if (previewRetryLogged == 0)
-				{
-					previewRetryLogged = 1;
-				}
-				return 0;
-			}
 			restoreOverride(target);
 			return 0;
 		}
@@ -400,7 +367,6 @@ public class GlassOpacityTuner
 		active.setColor(argb);
 		renderInstance = instanceID;
 		hasOpacityOverride = 1;
-		previewRetryLogged = 0;
 		return 1;
 	}
 
@@ -464,8 +430,6 @@ public class GlassOpacityTuner
 		int instanceID = findGlassRenderInstance(target.id(), privateType.id());
 		if (instanceID == 0)
 		{
-			if (previewRefreshInProgress != 0)
-				return 1; // Keep the temporary type/resources alive for the next preview refresh.
 			restoreOverride(target);
 			return 0;
 		}
@@ -513,7 +477,6 @@ public class GlassOpacityTuner
 			{
 				return 0;
 			}
-
 
 		}
 		else if (target.getRenderType() != originalRenderType)
