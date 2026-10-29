@@ -44,7 +44,7 @@ public class InventoryItem_Part extends InventoryItem
 			+ " windshield=" + isWindshield
 			+ " renderType=" + renderType
 			+ " mesh=" + meshID;
-		inventoryPreviewTrace += line + "\\n";
+		inventoryPreviewTrace += line + "\n";
 		inventoryPreviewTraceLines++;
 		File traceFile = new File(INVENTORY_PREVIEW_TRACE_PATH);
 		if (traceFile.open(File.MODE_WRITE))
