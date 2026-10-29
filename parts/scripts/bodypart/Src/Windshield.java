@@ -58,6 +58,8 @@ public class Windshield extends BodyPart
 
 	public void load( File saveGame )
 	{
+		// Diagnostic entry marker: proves this compiled part class is loaded.
+		glassOpacityTuner.logPreviewState(null, "Windshield.load entry file_ver=" + file_ver);
 		super.load( saveGame );
 		// Legacy v2 records have no opacity payload.
 		if (file_ver >= 3)
