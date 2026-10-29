@@ -31,15 +31,6 @@ public class GlassOpacityTuner
 	// Inventory preview render children can appear one frame after show().
 	// Keep the temporary render type alive until a child instance exists.
 	int previewRefreshInProgress = 0;
-	int previewDebugLines = 0;
-	int previewEntryLogged = 0;
-
-	// Diagnostic output uses the same SDAT writer as the working Painter probe.
-	// Static buffer keeps messages from different Window/Windshield instances.
-	static String previewLogBuffer = "";
-	static int previewLogLineCount = 0;
-	final static String PREVIEW_LOG_PATH = "slrr_glass_preview_debug.sdat";
-
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
 	ResourceRef targetMeshHandle;
@@ -98,77 +89,6 @@ public class GlassOpacityTuner
 		oldAppearanceCustomized = appearanceCustomized;
 		restorePending = appearanceCustomized;
 		tuningHadOverride = 0;
-		previewDebugLines = 0;
-		previewEntryLogged = 0;
-		logPreviewState(null, "LOAD");
-	}
-
-	// Temporary field diagnostic for the inventory-preview restoration issue.
-	// Uses System.log (supported in this installation); remove after diagnosis.
-	void logPreviewState( Part target, String phase )
-	{
-		if (previewDebugLines >= 40 || previewLogLineCount >= 200) return;
-
-		int partID = 0;
-		int renderID = 0;
-		int meshID = 0;
-		int privateID = 0;
-		if (target)
-		{
-			partID = target.id();
-			renderID = target.getRenderType();
-			meshID = target.getMesh();
-		}
-		if (privateTypeHandle) privateID = privateTypeHandle.id();
-
-		String line = "[GlassOpacityPreview] " + phase
-			+ " part=" + partID
-			+ " savedAlpha=" + opacity
-			+ " tint=" + tintR + "," + tintG + "," + tintB
-			+ " custom=" + appearanceCustomized
-			+ " pending=" + restorePending
-			+ " override=" + hasOpacityOverride
-			+ " targetRT=" + renderID
-			+ " mesh=" + meshID
-			+ " privateRT=" + privateID;
-
-		if (target)
-		{
-			GameRef targetRef = new GameRef(target.id());
-			ResourceRef child = targetRef.getFirstChild();
-			int childIndex = 0;
-			int renderChildren = 0;
-			while (child && childIndex < 32)
-			{
-				if (child.type() == 3)
-				{
-					RenderRef live = new RenderRef(child.id());
-					line += " child" + childIndex + "=" + child.id() + "/rt" + live.getTypeID();
-					renderChildren++;
-				}
-				child = child.getNextChild();
-				childIndex++;
-			}
-			line += " renderChildren=" + renderChildren;
-		}
-
-		// Mirror the proven Painter probe: the game writes this as an SDAT file,
-		// so rewrite the complete accumulated buffer after each diagnostic event.
-		previewLogBuffer += line + "\n";
-		previewLogLineCount++;
-
-		File previewLog = new File(PREVIEW_LOG_PATH);
-		if (previewLog.open(File.MODE_WRITE))
-		{
-			previewLog.write(previewLogBuffer);
-			previewLog.close();
-		}
-		else
-		{
-			// Retain the buffer so a later preview attempt can retry the write.
-			System.log("[GlassOpacityPreview] Could not open " + PREVIEW_LOG_PATH + " for writing.");
-		}
-		previewDebugLines++;
 	}
 
 	int clampColor( int value )
@@ -197,11 +117,11 @@ public class GlassOpacityTuner
 		return (value * 255 + 50) / 100;
 	}
 
-	// Preset 0 is a no-op for parts that already have a custom RGB tint.
+	// Preset 0 restores the tint that was active when the tuning menu opened.
 	String[] getTintNames()
 	{
 		String[] names = new String[16];
-		names[0] = "Custom / current";
+		names[0] = "Original tint";
 		names[1] = "Stock";
 		names[2] = "Black";
 		names[3] = "Charcoal";
@@ -317,12 +237,6 @@ public class GlassOpacityTuner
 	public void onInventoryPreview( Part target )
 	{
 		previewRefreshInProgress = 1;
-		if (previewEntryLogged == 0)
-		{
-			logPreviewState(target, "PREVIEW-ENTRY");
-			previewEntryLogged = 1;
-		}
-
 		if (restorePending != 0 || hasOpacityOverride == 0)
 		{
 			if (restorePending != 0 && applyAppearance(target, opacity, tintR, tintG, tintB))
@@ -378,7 +292,9 @@ public class GlassOpacityTuner
 			percent, 0.0, 100.0, 21, null );
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
-		m.addItem( "Next glass color", CMD_GLASS_TINT);
+		String[] tintNames = getTintNames();
+		int selectedTint = findTintPreset();
+		m.addItem( "Glass color", CMD_GLASS_TINT, selectedTint, tintNames, null );
 	}
 
 	public void handleMessage( Event m, Part target )
@@ -409,12 +325,24 @@ public class GlassOpacityTuner
 		else if (m.cmd == CMD_GLASS_TINT)
 		{
 			previous = findTintPreset();
-			requested = previous + 1;
-			if (requested > 15) requested = 1;
+			requested = clampTintPreset(((MultiChoice)m.gadget).value);
 
-			int red = tintRed(requested);
-			int green = tintGreen(requested);
-			int blue = tintBlue(requested);
+			int red;
+			int green;
+			int blue;
+			if (requested == 0)
+			{
+				// Restore the tint that was active when this tuning menu opened.
+				red = oldTintR;
+				green = oldTintG;
+				blue = oldTintB;
+			}
+			else
+			{
+				red = tintRed(requested);
+				green = tintGreen(requested);
+				blue = tintBlue(requested);
+			}
 
 			if (applyAppearance(target, opacity, red, green, blue))
 			{
@@ -422,6 +350,10 @@ public class GlassOpacityTuner
 				tintG = green;
 				tintB = blue;
 				appearanceCustomized = 1;
+			}
+			else
+			{
+				m.gadget.setValue(previous);
 			}
 		}
 	}
@@ -457,14 +389,12 @@ public class GlassOpacityTuner
 	{
 		if (!ensureOverride(target))
 		{
-			logPreviewState(target, "APPLY-ENSURE-FAILED");
 			return 0;
 		}
 
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
-			logPreviewState(target, "APPLY-NO-INSTANCE");
 			if (previewRefreshInProgress != 0)
 				return 0;
 			restoreOverride(target);
@@ -478,7 +408,6 @@ public class GlassOpacityTuner
 		active.setColor(argb);
 		renderInstance = instanceID;
 		hasOpacityOverride = 1;
-		logPreviewState(target, "APPLY-COLOR-SET instance=" + instanceID + " argb=" + argb);
 		return 1;
 	}
 
