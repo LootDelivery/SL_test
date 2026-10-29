@@ -15,6 +15,7 @@ Working snapshot: `stable_2_w_debug/` on `main`.
 ## Snapshot files
 
 - `stable_2_w_debug/GlassOpacityTuner.java`
+- `stable_2_w_debug/GlassTintDialog.java` (copy to `sl/Scripts/game/src/GlassTintDialog.java`)
 - `stable_2_w_debug/Window.java`
 - `stable_2_w_debug/Windshield.java`
 - `stable_2_w_debug/Part.java`
