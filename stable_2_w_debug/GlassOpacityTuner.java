@@ -117,7 +117,7 @@ public class GlassOpacityTuner
 		return (value * 255 + 50) / 100;
 	}
 
-	// Preset 0 is a no-op for parts that already have a custom RGB tint.
+	// Preset 0 restores the tint that was active when the tuning menu opened.
 	String[] getTintNames()
 	{
 		String[] names = new String[16];
