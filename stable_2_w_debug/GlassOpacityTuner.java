@@ -549,6 +549,7 @@ public class GlassOpacityTuner
 		hasOpacityOverride = 0;
 		return 1;
 	}
+}
 
 class GlassTintDialog extends Dialog
 {
