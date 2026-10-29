@@ -338,6 +338,7 @@ public class GlassOpacityTuner
 				}
 			}
 		}
+	}
 
 	public void endTuningSession( int cancelled, Part target )
 	{
