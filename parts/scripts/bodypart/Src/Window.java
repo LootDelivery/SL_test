@@ -56,7 +56,7 @@ public class Window extends BodyPart
 		super.load( saveGame );
 		// Legacy v2 records have no opacity payload.
 		if (file_ver >= 3)
-			glassOpacityTuner.load( saveGame );
+			glassOpacityTuner.load( saveGame, file_ver );
 	}
 
 	public void install()
