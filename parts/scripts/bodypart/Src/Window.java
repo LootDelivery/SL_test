@@ -45,4 +45,24 @@ public class Window extends BodyPart
 		glassOpacityTuner.endTuningSession(cancelled, this);
 	}
 
+	public void save( File saveGame )
+	{
+		super.save( saveGame );
+		glassOpacityTuner.save( saveGame );
+	}
+
+	public void load( File saveGame )
+	{
+		super.load( saveGame );
+		// Legacy v2 records have no opacity payload.
+		if (file_ver >= 3)
+			glassOpacityTuner.load( saveGame );
+	}
+
+	public void install()
+	{
+		super.install();
+		glassOpacityTuner.onInstalled( this );
+	}
+
 }
