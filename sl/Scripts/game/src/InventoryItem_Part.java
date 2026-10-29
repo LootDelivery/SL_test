@@ -45,7 +45,7 @@ public class InventoryItem_Part extends InventoryItem
 			+ " renderType=" + renderType
 			+ " mesh=" + meshID;
 		if (inventoryPreviewTraceLines == 0)
-			inventoryPreviewTrace = "[InventoryGlassTrace] BUILD-MARKER virtual-hook-v1\\n";
+			inventoryPreviewTrace = "[InventoryGlassTrace] BUILD-MARKER virtual-hook-v1\n";
 		inventoryPreviewTrace += line + "\n";
 		inventoryPreviewTraceLines++;
 		File traceFile = new File(INVENTORY_PREVIEW_TRACE_PATH);
