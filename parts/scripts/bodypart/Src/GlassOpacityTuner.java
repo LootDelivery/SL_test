@@ -11,9 +11,7 @@ import java.game.parts.*;
 public class GlassOpacityTuner
 {
 	static final int CMD_GLASS_OPACITY = 9301;
-	static final int CMD_GLASS_RED = 9302;
-	static final int CMD_GLASS_GREEN = 9303;
-	static final int CMD_GLASS_BLUE = 9304;
+	static final int CMD_GLASS_TINT = 9305;
 
 	// The chosen alpha is persisted in the part record. Runtime render handles are rebuilt after installation.
 	int opacity = 127;
@@ -110,6 +108,109 @@ public class GlassOpacityTuner
 		return (value * 255 + 50) / 100;
 	}
 
+	// Preset 0 is a no-op for parts that already have a custom RGB tint.
+	String[] getTintNames()
+	{
+		String[] names = new String[16];
+		names[0] = "Custom / current";
+		names[1] = "Stock";
+		names[2] = "Black";
+		names[3] = "Charcoal";
+		names[4] = "Gray";
+		names[5] = "Silver";
+		names[6] = "White";
+		names[7] = "Red";
+		names[8] = "Orange";
+		names[9] = "Yellow";
+		names[10] = "Green";
+		names[11] = "Cyan";
+		names[12] = "Blue";
+		names[13] = "Purple";
+		names[14] = "Pink";
+		names[15] = "Brown";
+		return names;
+	}
+
+	int clampTintPreset( int value )
+	{
+		if (value < 0) return 0;
+		if (value > 15) return 15;
+		return value;
+	}
+
+	int findTintPreset()
+	{
+		for (int i = 1; i <= 15; i++)
+			if (tintR == tintRed(i) && tintG == tintGreen(i) && tintB == tintBlue(i))
+				return i;
+		return 0;
+	}
+
+	int tintRed( int preset )
+	{
+		if (preset == 1) return 22;
+		if (preset == 2) return 0;
+		if (preset == 3) return 32;
+		if (preset == 4) return 85;
+		if (preset == 5) return 145;
+		if (preset == 6) return 205;
+		if (preset == 7) return 130;
+		if (preset == 8) return 170;
+		if (preset == 9) return 150;
+		if (preset == 10) return 20;
+		if (preset == 11) return 20;
+		if (preset == 12) return 25;
+		if (preset == 13) return 95;
+		if (preset == 14) return 165;
+		if (preset == 15) return 85;
+		return tintR;
+	}
+
+	int tintGreen( int preset )
+	{
+		if (preset == 1) return 13;
+		if (preset == 2) return 0;
+		if (preset == 3) return 32;
+		if (preset == 4) return 85;
+		if (preset == 5) return 150;
+		if (preset == 6) return 210;
+		if (preset == 7) return 24;
+		if (preset == 8) return 65;
+		if (preset == 9) return 125;
+		if (preset == 10) return 105;
+		if (preset == 11) return 125;
+		if (preset == 12) return 55;
+		if (preset == 13) return 30;
+		if (preset == 14) return 50;
+		if (preset == 15) return 45;
+		return tintG;
+	}
+
+	int tintBlue( int preset )
+	{
+		if (preset == 1) return 13;
+		if (preset == 2) return 0;
+		if (preset == 3) return 36;
+		if (preset == 4) return 90;
+		if (preset == 5) return 155;
+		if (preset == 6) return 215;
+		if (preset == 7) return 30;
+		if (preset == 8) return 20;
+		if (preset == 9) return 25;
+		if (preset == 10) return 40;
+		if (preset == 11) return 140;
+		if (preset == 12) return 140;
+		if (preset == 13) return 130;
+		if (preset == 14) return 90;
+		if (preset == 15) return 24;
+		return tintB;
+	}
+
+	int packAppearanceColor( int alpha, int red, int green, int blue )
+	{
+		return alpha * 16777216 + red * 65536 + green * 256 + blue;
+	}
+
 	// Called after the part has been installed into the scene graph.
 	// Loading a nested part happens before the parent installs it, so rebuilding
 	// the temporary render type from load() would be too early.
@@ -122,6 +223,45 @@ public class GlassOpacityTuner
 			else
 				System.print("Glass opacity: saved override will remain pending; install-time render instance was unavailable.");
 		}
+	}
+
+	// Refresh the live render instance used by InventoryItem_Part's preview camera.
+	// Moving a part between the car and inventory can recreate its child render instance.
+	public void onInventoryPreview( Part target )
+	{
+		if (restorePending != 0 || hasOpacityOverride == 0)
+		{
+			if (restorePending != 0 && applyAppearance(target, opacity, tintR, tintG, tintB))
+				restorePending = 0;
+			return;
+		}
+
+		if (!privateTypeHandle)
+		{
+			if (applyAppearance(target, opacity, tintR, tintG, tintB))
+				restorePending = 0;
+			return;
+		}
+
+		int currentType = target.getRenderType();
+		if (currentType == originalRenderType)
+			target.setRenderType(privateTypeHandle.id());
+		else if (currentType != privateTypeHandle.id())
+		{
+			System.print("Glass opacity: preview render type was changed externally; leaving it untouched.");
+			return;
+		}
+
+		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
+		if (instanceID == 0)
+		{
+			System.print("Glass opacity: inventory preview render instance not found yet.");
+			return;
+		}
+
+		RenderRef active = new RenderRef(instanceID);
+		active.setColor(packAppearanceColor(opacity, tintR, tintG, tintB));
+		renderInstance = instanceID;
 	}
 
 	public void buildTuningMenu( Menu m, Part target )
@@ -140,17 +280,7 @@ public class GlassOpacityTuner
 			percent, 0.0, 100.0, 21, null );
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
-		Slider redSlider = m.addItem( "Glass tint red", CMD_GLASS_RED,
-			tintR, 0.0, 255.0, 256, null );
-		redSlider.changeVLabelText( Float.toString(tintR, "   R %1.0f") );
-
-		Slider greenSlider = m.addItem( "Glass tint green", CMD_GLASS_GREEN,
-			tintG, 0.0, 255.0, 256, null );
-		greenSlider.changeVLabelText( Float.toString(tintG, "   G %1.0f") );
-
-		Slider blueSlider = m.addItem( "Glass tint blue", CMD_GLASS_BLUE,
-			tintB, 0.0, 255.0, 256, null );
-		blueSlider.changeVLabelText( Float.toString(tintB, "   B %1.0f") );
+		m.addItem( "Next glass color", CMD_GLASS_TINT);
 	}
 
 	public void handleMessage( Event m, Part target )
@@ -177,52 +307,21 @@ public class GlassOpacityTuner
 					Float.toString(previous, "   %1.0f%%") );
 			}
 		}
-		else if (m.cmd == CMD_GLASS_RED)
+		else if (m.cmd == CMD_GLASS_TINT)
 		{
-			previous = tintR;
-			requested = clampColor((int)((Slider)m.gadget).value);
-			if (applyAppearance(target, opacity, requested, tintG, tintB))
+			previous = findTintPreset();
+			requested = previous + 1;
+			if (requested > 15) requested = 1;
+
+			int red = tintRed(requested);
+			int green = tintGreen(requested);
+			int blue = tintBlue(requested);
+
+			if (applyAppearance(target, opacity, red, green, blue))
 			{
-				tintR = requested;
-				((Slider)m.gadget).setValue(tintR);
-				((Slider)m.gadget).changeVLabelText(Float.toString(tintR, "   R %1.0f"));
-			}
-			else
-			{
-				((Slider)m.gadget).setValue(previous);
-				((Slider)m.gadget).changeVLabelText(Float.toString(previous, "   R %1.0f"));
-			}
-		}
-		else if (m.cmd == CMD_GLASS_GREEN)
-		{
-			previous = tintG;
-			requested = clampColor((int)((Slider)m.gadget).value);
-			if (applyAppearance(target, opacity, tintR, requested, tintB))
-			{
-				tintG = requested;
-				((Slider)m.gadget).setValue(tintG);
-				((Slider)m.gadget).changeVLabelText(Float.toString(tintG, "   G %1.0f"));
-			}
-			else
-			{
-				((Slider)m.gadget).setValue(previous);
-				((Slider)m.gadget).changeVLabelText(Float.toString(previous, "   G %1.0f"));
-			}
-		}
-		else if (m.cmd == CMD_GLASS_BLUE)
-		{
-			previous = tintB;
-			requested = clampColor((int)((Slider)m.gadget).value);
-			if (applyAppearance(target, opacity, tintR, tintG, requested))
-			{
-				tintB = requested;
-				((Slider)m.gadget).setValue(tintB);
-				((Slider)m.gadget).changeVLabelText(Float.toString(tintB, "   B %1.0f"));
-			}
-			else
-			{
-				((Slider)m.gadget).setValue(previous);
-				((Slider)m.gadget).changeVLabelText(Float.toString(previous, "   B %1.0f"));
+				tintR = red;
+				tintG = green;
+				tintB = blue;
 			}
 		}
 	}
@@ -268,7 +367,7 @@ public class GlassOpacityTuner
 
 		// Avoid bit-shift expressions: this older SLRR VM has shown stack errors in shift-heavy expressions.
 		// Pack ARGB by multiplication so alpha and the RGB tint are independently controllable.
-		int argb = alpha * 16777216 + red * 65536 + green * 256 + blue;
+		int argb = packAppearanceColor(alpha, red, green, blue);
 		RenderRef active = new RenderRef(instanceID);
 		active.setColor(argb);
 		renderInstance = instanceID;
