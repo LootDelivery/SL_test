@@ -15,7 +15,7 @@ Working snapshot: `stable_2_w_debug/` on `main`.
 ## Snapshot files
 
 - `stable_2_w_debug/GlassOpacityTuner.java`
-- `stable_2_w_debug/GlassTintPresetDialog.java` (copy to `parts/scripts/bodypart/Src/GlassTintPresetDialog.java` alongside `GlassOpacityTuner.java`; the file deliberately declares package `java.game` so the compiler sees it in the same source batch while it retains access to `Player.controller`)
+- `stable_2_w_debug/GlassTintPresetDialog.java` (copy to `sl/Scripts/game/src/GlassTintPresetDialog.java`, where it matches package `java.game`; compile it with the game scripts before compiling `GlassOpacityTuner.java` in `parts/scripts/bodypart/Src/`)
 - `stable_2_w_debug/Window.java`
 - `stable_2_w_debug/Windshield.java`
 - `stable_2_w_debug/Part.java`
@@ -35,5 +35,5 @@ Working snapshot: `stable_2_w_debug/` on `main`.
 
 ## Limitations
 
-- The popup source is kept beside `GlassOpacityTuner.java` because the bodypart compiler builds that source tree separately from `sl/Scripts/game/src`. It has been source-checked but has not been compiled or exercised in the SLRR runtime from this editing environment. Test on a backed-up game/save before relying on the result.
+- The popup source belongs in `sl/Scripts/game/src/` because it declares package `java.game` and accesses package-scoped `Player.controller`. It must be compiled as a game script before the bodypart tuner that references it. This source placement has not been compiled or exercised in the SLRR runtime from this editing environment. Test on a backed-up game/save before relying on the result.
 - Reflection strength remains separate work. The currently used `RenderRef.setColor()` path controls ARGB, not the material's `env_factor`.
