@@ -282,7 +282,7 @@ public class GlassOpacityTuner
 
 		String[] tintNames = getTintNames();
 		int selectedTint = findTintPreset();
-		m.addItem( "Glass color", CMD_GLASS_TINT, selectedTint, tintNames, null );
+		m.addItem( "Glass color", CMD_GLASS_TINT, selectedTint, 0, 1, tintNames.length, null ).setValues(tintNames);
 	}
 
 	public void handleMessage( Event m, Part target )
@@ -317,7 +317,7 @@ public class GlassOpacityTuner
 			// Index 0 means keep the existing custom RGB tint unchanged.
 			if (requested == 0)
 			{
-				m.gadget.setValue(previous);
+				// Keep the current preset if no valid choice was made.
 			}
 			else
 			{
@@ -330,7 +330,7 @@ public class GlassOpacityTuner
 					tintR = red;
 					tintG = green;
 					tintB = blue;
-					m.gadget.setValue(requested);
+					// The switch gadget updates its own displayed selection.
 				}
 				else
 				{
