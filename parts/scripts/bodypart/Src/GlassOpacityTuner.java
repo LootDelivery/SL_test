@@ -11,10 +11,19 @@ import java.game.parts.*;
 public class GlassOpacityTuner
 {
 	static final int CMD_GLASS_OPACITY = 9301;
+	static final int CMD_GLASS_RED = 9302;
+	static final int CMD_GLASS_GREEN = 9303;
+	static final int CMD_GLASS_BLUE = 9304;
 
 	// The chosen alpha is persisted in the part record. Runtime render handles are rebuilt after installation.
 	int opacity = 127;
 	int oldOpacity = 127;
+	int tintR = 22;
+	int tintG = 13;
+	int tintB = 13;
+	int oldTintR = 22;
+	int oldTintG = 13;
+	int oldTintB = 13;
 	int hasOpacityOverride = 0;
 	int restorePending = 0;
 	int tuningHadOverride = 0;
@@ -28,7 +37,7 @@ public class GlassOpacityTuner
 	int originalMesh = 0;
 	int renderInstance = 0;
 
-	// Version-3 part payload: marker + alpha. Keep runtime RenderRef IDs out of saves.
+	// Version-4 part payload: override marker, alpha, and RGB tint. Runtime handles are not saved.
 	public void save( File saveGame )
 	{
 		int savedOverride = 0;
@@ -37,9 +46,12 @@ public class GlassOpacityTuner
 
 		saveGame.write( savedOverride );
 		saveGame.write( opacity );
+		saveGame.write( tintR );
+		saveGame.write( tintG );
+		saveGame.write( tintB );
 	}
 
-	public void load( File saveGame )
+	public void load( File saveGame, int version )
 	{
 		int savedOverride = saveGame.readInt();
 		int savedOpacity = saveGame.readInt();
@@ -49,12 +61,53 @@ public class GlassOpacityTuner
 
 		opacity = savedOpacity;
 		oldOpacity = savedOpacity;
+		tintR = 22;
+		tintG = 13;
+		tintB = 13;
+		if (version >= 4)
+		{
+			tintR = saveGame.readInt();
+			tintG = saveGame.readInt();
+			tintB = saveGame.readInt();
+		}
+		tintR = clampColor(tintR);
+		tintG = clampColor(tintG);
+		tintB = clampColor(tintB);
+		oldTintR = tintR;
+		oldTintG = tintG;
+		oldTintB = tintB;
 		hasOpacityOverride = 0;
 		if (savedOverride != 0)
 			restorePending = 1;
 		else
 			restorePending = 0;
 		tuningHadOverride = 0;
+	}
+
+	int clampColor( int value )
+	{
+		if (value < 0) return 0;
+		if (value > 255) return 255;
+		return value;
+	}
+
+	int opacityPercent()
+	{
+		return (opacity * 100 + 127) / 255;
+	}
+
+	int snapPercentToFive( int value )
+	{
+		if (value < 0) value = 0;
+		if (value > 100) value = 100;
+		value = ((value + 2) / 5) * 5;
+		if (value > 100) value = 100;
+		return value;
+	}
+
+	int alphaFromPercent( int value )
+	{
+		return (value * 255 + 50) / 100;
 	}
 
 	// Called after the part has been installed into the scene graph.
@@ -64,7 +117,7 @@ public class GlassOpacityTuner
 	{
 		if (restorePending != 0)
 		{
-			if (applyOpacity(target, opacity))
+			if (applyAppearance(target, opacity, tintR, tintG, tintB))
 				restorePending = 0;
 			else
 				System.print("Glass opacity: saved override will remain pending; install-time render instance was unavailable.");
@@ -74,37 +127,102 @@ public class GlassOpacityTuner
 	public void buildTuningMenu( Menu m, Part target )
 	{
 		oldOpacity = opacity;
+		oldTintR = tintR;
+		oldTintG = tintG;
+		oldTintB = tintB;
 		if (privateTypeHandle && target.getRenderType() == privateTypeHandle.id())
 			tuningHadOverride = 1;
 		else
 			tuningHadOverride = 0;
 
-		Slider slider = m.addItem( "Glass opacity", CMD_GLASS_OPACITY,
-			opacity, 0.0, 255.0, 256, null );
-		slider.changeVLabelText( Float.toString(opacity*100.0/255.0, "   %1.0f%%") );
+		int percent = snapPercentToFive(opacityPercent());
+		Slider opacitySlider = m.addItem( "Glass opacity", CMD_GLASS_OPACITY,
+			percent, 0.0, 100.0, 21, null );
+		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
+
+		Slider redSlider = m.addItem( "Glass tint red", CMD_GLASS_RED,
+			tintR, 0.0, 255.0, 256, null );
+		redSlider.changeVLabelText( Float.toString(tintR, "   R %1.0f") );
+
+		Slider greenSlider = m.addItem( "Glass tint green", CMD_GLASS_GREEN,
+			tintG, 0.0, 255.0, 256, null );
+		greenSlider.changeVLabelText( Float.toString(tintG, "   G %1.0f") );
+
+		Slider blueSlider = m.addItem( "Glass tint blue", CMD_GLASS_BLUE,
+			tintB, 0.0, 255.0, 256, null );
+		blueSlider.changeVLabelText( Float.toString(tintB, "   B %1.0f") );
 	}
 
 	public void handleMessage( Event m, Part target )
 	{
+		int requested;
+		int previous;
+
 		if (m.cmd == CMD_GLASS_OPACITY)
 		{
-			int previousOpacity = opacity;
-			int requestedOpacity = (int)((Slider)m.gadget).value;
+			previous = snapPercentToFive(opacityPercent());
+			requested = snapPercentToFive((int)((Slider)m.gadget).value);
 
-			if (requestedOpacity < 0) requestedOpacity = 0;
-			if (requestedOpacity > 255) requestedOpacity = 255;
-
-			if (applyOpacity(target, requestedOpacity))
+			if (applyAppearance(target, alphaFromPercent(requested), tintR, tintG, tintB))
 			{
-				opacity = requestedOpacity;
+				opacity = alphaFromPercent(requested);
+				((Slider)m.gadget).setValue(requested);
 				((Slider)m.gadget).changeVLabelText(
-					Float.toString(opacity*100.0/255.0, "   %1.0f%%") );
+					Float.toString(requested, "   %1.0f%%") );
 			}
 			else
 			{
-				((Slider)m.gadget).setValue(previousOpacity);
-					((Slider)m.gadget).changeVLabelText(
-					Float.toString(previousOpacity*100.0/255.0, "   %1.0f%%") );
+				((Slider)m.gadget).setValue(previous);
+				((Slider)m.gadget).changeVLabelText(
+					Float.toString(previous, "   %1.0f%%") );
+			}
+		}
+		else if (m.cmd == CMD_GLASS_RED)
+		{
+			previous = tintR;
+			requested = clampColor((int)((Slider)m.gadget).value);
+			if (applyAppearance(target, opacity, requested, tintG, tintB))
+			{
+				tintR = requested;
+				((Slider)m.gadget).setValue(tintR);
+				((Slider)m.gadget).changeVLabelText(Float.toString(tintR, "   R %1.0f"));
+			}
+			else
+			{
+				((Slider)m.gadget).setValue(previous);
+				((Slider)m.gadget).changeVLabelText(Float.toString(previous, "   R %1.0f"));
+			}
+		}
+		else if (m.cmd == CMD_GLASS_GREEN)
+		{
+			previous = tintG;
+			requested = clampColor((int)((Slider)m.gadget).value);
+			if (applyAppearance(target, opacity, tintR, requested, tintB))
+			{
+				tintG = requested;
+				((Slider)m.gadget).setValue(tintG);
+				((Slider)m.gadget).changeVLabelText(Float.toString(tintG, "   G %1.0f"));
+			}
+			else
+			{
+				((Slider)m.gadget).setValue(previous);
+				((Slider)m.gadget).changeVLabelText(Float.toString(previous, "   G %1.0f"));
+			}
+		}
+		else if (m.cmd == CMD_GLASS_BLUE)
+		{
+			previous = tintB;
+			requested = clampColor((int)((Slider)m.gadget).value);
+			if (applyAppearance(target, opacity, tintR, tintG, requested))
+			{
+				tintB = requested;
+				((Slider)m.gadget).setValue(tintB);
+				((Slider)m.gadget).changeVLabelText(Float.toString(tintB, "   B %1.0f"));
+			}
+			else
+			{
+				((Slider)m.gadget).setValue(previous);
+				((Slider)m.gadget).changeVLabelText(Float.toString(previous, "   B %1.0f"));
 			}
 		}
 	}
@@ -114,12 +232,15 @@ public class GlassOpacityTuner
 		if (cancelled)
 		{
 			opacity = oldOpacity;
+			tintR = oldTintR;
+			tintG = oldTintG;
+			tintB = oldTintB;
 
 			if (tuningHadOverride != 0)
 			{
-				// Existing override: restore the value from before this dialog.
+				// Existing override: restore opacity and tint from before this dialog.
 				if (privateTypeHandle && target.getRenderType() == privateTypeHandle.id())
-					applyOpacity(target, opacity);
+					applyAppearance(target, opacity, tintR, tintG, tintB);
 			}
 			else
 			{
@@ -132,7 +253,7 @@ public class GlassOpacityTuner
 		tuningHadOverride = 0;
 	}
 
-	int applyOpacity( Part target, int alpha )
+	int applyAppearance( Part target, int alpha, int red, int green, int blue )
 	{
 		if (!ensureOverride(target))
 			return 0;
@@ -145,11 +266,9 @@ public class GlassOpacityTuner
 			return 0;
 		}
 
-		// The tested windshield SCX has DiffuseColor RGB (22, 13, 13).
-		// Alpha is controlled from 0 to 255. Other glass tint RGBs may need separate handling.
 		// Avoid bit-shift expressions: this older SLRR VM has shown stack errors in shift-heavy expressions.
-		// 0x160D0D = 1445133; multiply alpha by 2^24 to build the ARGB high byte.
-		int argb = alpha * 16777216 + 1445133;
+		// Pack ARGB by multiplication so alpha and the RGB tint are independently controllable.
+		int argb = alpha * 16777216 + red * 65536 + green * 256 + blue;
 		RenderRef active = new RenderRef(instanceID);
 		active.setColor(argb);
 		renderInstance = instanceID;
