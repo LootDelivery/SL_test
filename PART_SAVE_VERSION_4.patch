@@ -1,5 +1,11 @@
 --- a/parts/scripts/src/Part.java
 +++ b/parts/scripts/src/Part.java
-@@
+@@ -42,7 +42,7 @@
+ 	final static int MF_LAMA	= parts:0xAA00r;
+ 
+ 	//final static int SAVEFILEVERSION_PART = 2; //old!
 -	final static int SAVEFILEVERSION_PART = 3; //drag_matrix added
 +	final static int SAVEFILEVERSION_PART = 4; //glass-opacity payload added
+ 
+ 	String	name = "<unnamed>";
+ 	String	description = "<description not available yet>";
