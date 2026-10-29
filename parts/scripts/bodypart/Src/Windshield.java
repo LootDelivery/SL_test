@@ -40,6 +40,11 @@ public class Windshield extends BodyPart
 		glassOpacityTuner.handleMessage(m, this);
 	}
 
+	public void refreshGlassOpacityPreview()
+	{
+		glassOpacityTuner.onInventoryPreview(this);
+	}
+
 	public void endTuningSession( int cancelled )
 	{
 		glassOpacityTuner.endTuningSession(cancelled, this);
