@@ -44,4 +44,20 @@ public class Windshield extends BodyPart
 	{
 		glassOpacityTuner.endTuningSession(cancelled, this);
 	}
+
+	public void load( File saveGame )
+	{
+		super.load(saveGame);
+
+		// Part save version 4 introduces the optional glass-opacity payload.
+		// Older saves contain no such data, so leave their original glass alone.
+		if (file_ver >= 4)
+			glassOpacityTuner.load(saveGame, this);
+	}
+
+	public void save( File saveGame )
+	{
+		super.save(saveGame);
+		glassOpacityTuner.save(saveGame);
+	}
 }
