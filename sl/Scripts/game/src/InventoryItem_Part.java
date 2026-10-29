@@ -1,14 +1,11 @@
 package java.game;
 
-import java.io.*;
 import java.util.*;
 import java.util.resource.*;
 import java.render.*;
 import java.render.osd.*;
 import java.sound.*;
 import java.game.parts.*;
-import java.game.parts.bodypart.Window;
-import java.game.parts.bodypart.Windshield;
 
 public class InventoryItem_Part extends InventoryItem
 {
@@ -16,49 +13,6 @@ public class InventoryItem_Part extends InventoryItem
 	private	int	partTypeID;
 
 	int	compatibility;
-
-	// Temporary diagnostic for tracing whether inventory thumbnails call the glass preview hook.
-	static String inventoryPreviewTrace = "";
-	static int inventoryPreviewTraceLines = 0;
-	final static String INVENTORY_PREVIEW_TRACE_PATH = "slrr_inventory_preview_trace_virtual_hook.sdat";
-
-	void logInventoryPreviewTrace( String phase, Part p )
-	{
-		if (inventoryPreviewTraceLines >= 100) return;
-		int partID = 0;
-		int renderType = 0;
-		int meshID = 0;
-		int isWindow = 0;
-		int isWindshield = 0;
-		if (p)
-		{
-			partID = p.id();
-			renderType = p.getRenderType();
-			meshID = p.getMesh();
-			if (p instanceof Window) isWindow = 1;
-			if (p instanceof Windshield) isWindshield = 1;
-		}
-		String line = "[InventoryGlassTrace] " + phase
-			+ " part=" + partID
-			+ " window=" + isWindow
-			+ " windshield=" + isWindshield
-			+ " renderType=" + renderType
-			+ " mesh=" + meshID;
-		if (inventoryPreviewTraceLines == 0)
-			inventoryPreviewTrace = "[InventoryGlassTrace] BUILD-MARKER virtual-hook-v1\n";
-		inventoryPreviewTrace += line + "\n";
-		inventoryPreviewTraceLines++;
-		File traceFile = new File(INVENTORY_PREVIEW_TRACE_PATH);
-		if (traceFile.open(File.MODE_WRITE))
-		{
-			traceFile.write(inventoryPreviewTrace);
-			traceFile.close();
-		}
-		else
-		{
-			System.log("[InventoryGlassTrace] Could not open " + INVENTORY_PREVIEW_TRACE_PATH);
-		}
-	}
 
 	public InventoryItem_Part( Inventory inv, int id )
 	{
@@ -203,7 +157,6 @@ public class InventoryItem_Part extends InventoryItem
 	public void show( InventoryPanel ip )
 	{
 		Part p = getPart();
-		logInventoryPreviewTrace( "ITEM-SHOW-ENTER", p );
 
 		if( p )
 		{
@@ -219,13 +172,9 @@ public class InventoryItem_Part extends InventoryItem
 	public void refreshGlassOpacityPreview()
 	{
 		Part p = getPart();
-		logInventoryPreviewTrace( "ITEM-REFRESH-ENTER", p );
 		if( p )
 		{
-			// Use virtual dispatch instead of instanceof: the SLRR script runtime
-			// reports these loaded glass parts as neither Window nor Windshield here.
 			p.refreshGlassOpacityPreview();
-			logInventoryPreviewTrace( "PREVIEW-HOOK-RETURN", p );
 		}
 	}
 
