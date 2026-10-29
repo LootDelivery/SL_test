@@ -10,6 +10,15 @@ This is an experimental source prototype for the stock screwdriver / **Fine tune
 - `parts/scripts/bodypart/Src/Window.java` — delegates screwdriver tuning to the helper.
 - `parts/scripts/bodypart/Src/Windshield.java` — delegates screwdriver tuning to the helper.
 
+## Saving the opacity
+
+The opacity value is now serialized as part-specific data, and re-applied when that part loads. To keep existing saves compatible, the shared part format version must be bumped once:
+
+- For the current source version that has `SAVEFILEVERSION_PART = 3`, apply [PART_SAVE_VERSION_4.patch](PART_SAVE_VERSION_4.patch) to `parts/scripts/src/Part.java` so the constant becomes `4`.
+- The `Window.java` and `Windshield.java` changes read the extra field only when `file_ver >= 4`; older version-3 saves will load with factory glass settings. New saves store whether an opacity override exists, and the alpha value.
+- The temporary render-type ID is **not** saved; load recreates the private render type and applies the saved alpha. If re-application fails, a message is written to the game's script log.
+- The patch assumes the current Part.java source has an instance field `file_ver` and version 3 format. Do not blindly replace an older/custom Part.java; apply the one-line change to the matching current source version. If your Part.java does not have the shown line, stop and compare versions before compiling.
+
 ## First test
 
 1. Back up the game's existing `Window.java` and `Windshield.java` (and any compiled class/cache files your source setup uses).
@@ -23,6 +32,6 @@ This is an experimental source prototype for the stock screwdriver / **Fine tune
 - This has **not yet been compiled or tested in-game**. Only source-level structural checks have been performed.
 - The runtime recipe was validated on the user's tested build using `frontend:0x21r` (render type) and `frontend:0x5Er` (mesh). The code checks resource types but cannot inspect the render type's embedded flags through the regular Java API.
 - The current code uses the tested glass diffuse RGB `(22, 13, 13)`; another car's window may use a different tint.
-- The opacity value is currently **not saved to the part/car save file**. The helper intentionally does not modify the stock save format. The setting is runtime/session-only for this prototype.
+- This prototype stores the override flag and alpha value at the end of each Window/Windshield part record, using part-save format version 4.
 - While the temporary render type is active, avoid saving from the game until the test is confirmed safe.
 - If the game reports a compiler/runtime error, restore the backed-up files and share the exact error log before trying further changes.
