@@ -12,7 +12,7 @@ public class GlassOpacityTuner
 {
 	static final int CMD_GLASS_OPACITY = 9301;
 
-	// Runtime/session-only override. This does not extend the car-save format.
+	// Opacity is saved with the part. The private RenderRef ID is runtime-only and is rebuilt on load.
 	int opacity = 127;
 	int oldOpacity = 127;
 	int hasOpacityOverride = 0;
