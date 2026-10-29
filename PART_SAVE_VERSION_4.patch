@@ -1,0 +1,5 @@
+--- a/parts/scripts/src/Part.java
++++ b/parts/scripts/src/Part.java
+@@
+-	final static int SAVEFILEVERSION_PART = 3; //drag_matrix added
++	final static int SAVEFILEVERSION_PART = 4; //glass-opacity payload added
