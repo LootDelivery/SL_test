@@ -225,7 +225,10 @@ public class GlassOpacityTuner
 		if (restorePending != 0)
 		{
 			if (applyAppearance(target, opacity, tintR, tintG, tintB))
+			{
 				restorePending = 0;
+				System.print("Glass opacity RESTORED on install: alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
+			}
 			else
 				System.print("Glass opacity: saved override will remain pending; install-time render instance was unavailable.");
 		}
@@ -251,6 +254,7 @@ public class GlassOpacityTuner
 			{
 				restorePending = 0;
 				previewRetryLogged = 0;
+				System.print("Glass opacity RESTORED in inventory preview: alpha=" + opacity + " rgb=" + tintR + "," + tintG + "," + tintB);
 			}
 			previewRefreshInProgress = 0;
 			return;
