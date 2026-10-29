@@ -332,7 +332,7 @@ public class GlassOpacityTuner
 		else if (m.cmd == CMD_GLASS_TINT)
 		{
 			previous = findTintPreset();
-			GlassTintDialog picker = new GlassTintDialog(getTintNames(), previous);
+			java.game.GlassTintPresetDialog picker = new java.game.GlassTintPresetDialog(getTintNames(), previous);
 			requested = picker.display();
 
 			// The dialog returns preset IDs 1..15, or 0 when cancelled.
