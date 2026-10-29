@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.resource.*;
 import java.render.*;
 import java.render.osd.*;
+import java.render.osd.dialog.*;
 import java.game.*;
 import java.game.parts.*;
 
@@ -39,6 +40,7 @@ public class GlassOpacityTuner
 	int originalRenderType = 0;
 	int originalMesh = 0;
 	int renderInstance = 0;
+	Button glassColorButton;
 
 	// Version-4 part payload: override marker, alpha, and RGB tint. Runtime handles are not saved.
 	public void save( File saveGame )
@@ -117,7 +119,7 @@ public class GlassOpacityTuner
 		return (value * 255 + 50) / 100;
 	}
 
-	// The SLRR MultiChoice cycles through these named tint presets.
+	// Named tint presets used by the compact color picker.
 	String[] getTintNames()
 	{
 		String[] names = new String[15];
@@ -144,6 +146,14 @@ public class GlassOpacityTuner
 		if (value < 0) return 0;
 		if (value > 15) return 15;
 		return value;
+	}
+
+	String getTintLabel()
+	{
+		int preset = findTintPreset();
+		if (preset > 0)
+			return "Glass color: " + getTintNames()[preset-1];
+		return "Glass color: Custom";
 	}
 
 	int findTintPreset()
@@ -291,10 +301,8 @@ public class GlassOpacityTuner
 			percent, 0.0, 100.0, 21, null );
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
-		String[] tintNames = getTintNames();
-		int selectedTint = findTintPreset() - 1;
-		if (selectedTint < 0) selectedTint = 0;
-		m.addItem( "Glass color", CMD_GLASS_TINT, selectedTint, tintNames, null );
+		glassColorButton = m.addItem( getTintLabel(), CMD_GLASS_TINT,
+			"Choose glass tint" );
 	}
 
 	public void handleMessage( Event m, Part target )
@@ -325,27 +333,27 @@ public class GlassOpacityTuner
 		else if (m.cmd == CMD_GLASS_TINT)
 		{
 			previous = findTintPreset();
-			// UI indices are 0..14; internal preset indices are 1..15.
-			// Stock is index 0, so Brown wraps directly to Stock.
-			requested = clampTintPreset(((MultiChoice)m.gadget).value + 1);
+			GlassTintDialog picker = new GlassTintDialog(
+				GameLogic.player.controller, getTintNames(), previous );
+			requested = picker.display();
 
-			int red = tintRed(requested);
-			int green = tintGreen(requested);
-			int blue = tintBlue(requested);
+			// The dialog returns preset IDs 1..15, or 0 when cancelled.
+			if (requested > 0)
+			{
+				requested = clampTintPreset(requested);
+				int red = tintRed(requested);
+				int green = tintGreen(requested);
+				int blue = tintBlue(requested);
 
-			if (applyAppearance(target, opacity, red, green, blue))
-			{
-				tintR = red;
-				tintG = green;
-				tintB = blue;
-				appearanceCustomized = 1;
-				m.gadget.setValue(findTintPreset() - 1);
-			}
-			else
-			{
-				int previousSelection = previous - 1;
-				if (previousSelection < 0) previousSelection = 0;
-				m.gadget.setValue(previousSelection);
+				if (applyAppearance(target, opacity, red, green, blue))
+				{
+					tintR = red;
+					tintG = green;
+					tintB = blue;
+					appearanceCustomized = 1;
+					if (glassColorButton)
+						glassColorButton.changeLabelText(getTintLabel());
+				}
 			}
 		}
 	}
@@ -540,5 +548,46 @@ public class GlassOpacityTuner
 		renderInstance = 0;
 		hasOpacityOverride = 0;
 		return 1;
+	}
+
+class GlassTintDialog extends Dialog
+{
+	final static int CMD_CANCEL = 1;
+	final static int CMD_PICK_COLOR = 1000;
+
+	String[] names;
+	int currentPreset;
+
+	Style itemStyle = new Style(0.56, 0.075, Frontend.smallFont,
+		Text.ALIGN_LEFT, Osd.RRT_TEST);
+
+	public GlassTintDialog( Controller ctrl, String[] options, int selectedPreset )
+	{
+		super(ctrl, Dialog.DF_MODAL|Dialog.DF_DEFAULTBG|Dialog.DF_DARKEN,
+			"GLASS COLOR", "CANCEL");
+
+		escapeCmd = CMD_CANCEL;
+		names = options;
+		currentPreset = selectedPreset;
+		osd.globalHandler = this;
+
+		Menu choices = osd.createMenu(itemStyle, -0.28, 0.56, 0, Osd.MD_VERTICAL);
+		for (int i = 0; i < names.length; i++)
+		{
+			String label = names[i];
+			if (currentPreset == i+1)
+				label = "* " + label;
+			choices.addItem(label, CMD_PICK_COLOR+i);
+		}
+	}
+
+	public void osdCommand( int cmd )
+	{
+		if (cmd >= CMD_PICK_COLOR && cmd < CMD_PICK_COLOR+names.length)
+			result = cmd - CMD_PICK_COLOR + 1;
+		else
+			result = 0;
+
+		notify();
 	}
 }
