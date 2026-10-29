@@ -33,5 +33,5 @@ The opacity value is now serialized as part-specific data, and re-applied when t
 - The runtime recipe was validated on the user's tested build using `frontend:0x21r` (render type) and `frontend:0x5Er` (mesh). The code checks resource types but cannot inspect the render type's embedded flags through the regular Java API.
 - The current code uses the tested glass diffuse RGB `(22, 13, 13)`; another car's window may use a different tint.
 - This prototype stores the override flag and alpha value at the end of each Window/Windshield part record, using part-save format version 4.
-- While the temporary render type is active, avoid saving from the game until the test is confirmed safe.
+- The new code is designed to save while the temporary render type is active: the base save records the original mesh ID, while the per-part payload stores only the override flag and alpha. Still test this first on a disposable save before using a valuable career save.
 - If the game reports a compiler/runtime error, restore the backed-up files and share the exact error log before trying further changes.
