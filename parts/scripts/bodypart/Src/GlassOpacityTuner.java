@@ -23,8 +23,22 @@ public class GlassOpacityTuner
 	int oldTintG = 13;
 	int oldTintB = 13;
 	int hasOpacityOverride = 0;
+	// Persistent user choice is separate from the temporary render-type override.
+	int appearanceCustomized = 0;
+	int oldAppearanceCustomized = 0;
 	int restorePending = 0;
 	int tuningHadOverride = 0;
+	// Inventory preview render children can appear one frame after show().
+	// Keep the temporary render type alive until a child instance exists.
+	int previewRefreshInProgress = 0;
+	int previewDebugLines = 0;
+	int previewEntryLogged = 0;
+
+	// Diagnostic output uses the same SDAT writer as the working Painter probe.
+	// Static buffer keeps messages from different Window/Windshield instances.
+	static String previewLogBuffer = "";
+	static int previewLogLineCount = 0;
+	final static String PREVIEW_LOG_PATH = "slrr_glass_preview_debug.sdat";
 
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
@@ -39,7 +53,7 @@ public class GlassOpacityTuner
 	public void save( File saveGame )
 	{
 		int savedOverride = 0;
-		if (hasOpacityOverride != 0 || restorePending != 0)
+		if (appearanceCustomized != 0 || hasOpacityOverride != 0 || restorePending != 0)
 			savedOverride = 1;
 
 		saveGame.write( savedOverride );
@@ -75,11 +89,86 @@ public class GlassOpacityTuner
 		oldTintG = tintG;
 		oldTintB = tintB;
 		hasOpacityOverride = 0;
-		if (savedOverride != 0)
-			restorePending = 1;
-		else
-			restorePending = 0;
+
+		// Older saves may contain the chosen values even if the transient
+		// render-type flag was lost before saving. Recover that customization.
+		appearanceCustomized = 0;
+		if (savedOverride != 0 || opacity != 127 || tintR != 22 || tintG != 13 || tintB != 13)
+			appearanceCustomized = 1;
+		oldAppearanceCustomized = appearanceCustomized;
+		restorePending = appearanceCustomized;
 		tuningHadOverride = 0;
+		previewDebugLines = 0;
+		previewEntryLogged = 0;
+		logPreviewState(null, "LOAD");
+	}
+
+	// Temporary field diagnostic for the inventory-preview restoration issue.
+	// Uses System.log (supported in this installation); remove after diagnosis.
+	void logPreviewState( Part target, String phase )
+	{
+		if (previewDebugLines >= 40 || previewLogLineCount >= 200) return;
+
+		int partID = 0;
+		int renderID = 0;
+		int meshID = 0;
+		int privateID = 0;
+		if (target)
+		{
+			partID = target.id();
+			renderID = target.getRenderType();
+			meshID = target.getMesh();
+		}
+		if (privateTypeHandle) privateID = privateTypeHandle.id();
+
+		String line = "[GlassOpacityPreview] " + phase
+			+ " part=" + partID
+			+ " savedAlpha=" + opacity
+			+ " tint=" + tintR + "," + tintG + "," + tintB
+			+ " custom=" + appearanceCustomized
+			+ " pending=" + restorePending
+			+ " override=" + hasOpacityOverride
+			+ " targetRT=" + renderID
+			+ " mesh=" + meshID
+			+ " privateRT=" + privateID;
+
+		if (target)
+		{
+			GameRef targetRef = new GameRef(target.id());
+			ResourceRef child = targetRef.getFirstChild();
+			int childIndex = 0;
+			int renderChildren = 0;
+			while (child && childIndex < 32)
+			{
+				if (child.type() == 3)
+				{
+					RenderRef live = new RenderRef(child.id());
+					line += " child" + childIndex + "=" + child.id() + "/rt" + live.getTypeID();
+					renderChildren++;
+				}
+				child = child.getNextChild();
+				childIndex++;
+			}
+			line += " renderChildren=" + renderChildren;
+		}
+
+		// Mirror the proven Painter probe: the game writes this as an SDAT file,
+		// so rewrite the complete accumulated buffer after each diagnostic event.
+		previewLogBuffer += line + "\n";
+		previewLogLineCount++;
+
+		File previewLog = new File(PREVIEW_LOG_PATH);
+		if (previewLog.open(File.MODE_WRITE))
+		{
+			previewLog.write(previewLogBuffer);
+			previewLog.close();
+		}
+		else
+		{
+			// Retain the buffer so a later preview attempt can retry the write.
+			System.log("[GlassOpacityPreview] Could not open " + PREVIEW_LOG_PATH + " for writing.");
+		}
+		previewDebugLines++;
 	}
 
 	int clampColor( int value )
@@ -220,8 +309,6 @@ public class GlassOpacityTuner
 		{
 			if (applyAppearance(target, opacity, tintR, tintG, tintB))
 				restorePending = 0;
-			else
-				System.print("Glass opacity: saved override will remain pending; install-time render instance was unavailable.");
 		}
 	}
 
@@ -229,10 +316,18 @@ public class GlassOpacityTuner
 	// Moving a part between the car and inventory can recreate its child render instance.
 	public void onInventoryPreview( Part target )
 	{
+		previewRefreshInProgress = 1;
+		if (previewEntryLogged == 0)
+		{
+			logPreviewState(target, "PREVIEW-ENTRY");
+			previewEntryLogged = 1;
+		}
+
 		if (restorePending != 0 || hasOpacityOverride == 0)
 		{
 			if (restorePending != 0 && applyAppearance(target, opacity, tintR, tintG, tintB))
 				restorePending = 0;
+			previewRefreshInProgress = 0;
 			return;
 		}
 
@@ -240,6 +335,7 @@ public class GlassOpacityTuner
 		{
 			if (applyAppearance(target, opacity, tintR, tintG, tintB))
 				restorePending = 0;
+			previewRefreshInProgress = 0;
 			return;
 		}
 
@@ -248,20 +344,21 @@ public class GlassOpacityTuner
 			target.setRenderType(privateTypeHandle.id());
 		else if (currentType != privateTypeHandle.id())
 		{
-			System.print("Glass opacity: preview render type was changed externally; leaving it untouched.");
+			previewRefreshInProgress = 0;
 			return;
 		}
 
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
-			System.print("Glass opacity: inventory preview render instance not found yet.");
+			previewRefreshInProgress = 0;
 			return;
 		}
 
 		RenderRef active = new RenderRef(instanceID);
 		active.setColor(packAppearanceColor(opacity, tintR, tintG, tintB));
 		renderInstance = instanceID;
+		previewRefreshInProgress = 0;
 	}
 
 	public void buildTuningMenu( Menu m, Part target )
@@ -270,6 +367,7 @@ public class GlassOpacityTuner
 		oldTintR = tintR;
 		oldTintG = tintG;
 		oldTintB = tintB;
+		oldAppearanceCustomized = appearanceCustomized;
 		if (privateTypeHandle && target.getRenderType() == privateTypeHandle.id())
 			tuningHadOverride = 1;
 		else
@@ -296,6 +394,7 @@ public class GlassOpacityTuner
 			if (applyAppearance(target, alphaFromPercent(requested), tintR, tintG, tintB))
 			{
 				opacity = alphaFromPercent(requested);
+				appearanceCustomized = 1;
 				((Slider)m.gadget).setValue(requested);
 				((Slider)m.gadget).changeVLabelText(
 					Float.toString(requested, "   %1.0f%%") );
@@ -322,6 +421,7 @@ public class GlassOpacityTuner
 				tintR = red;
 				tintG = green;
 				tintB = blue;
+				appearanceCustomized = 1;
 			}
 		}
 	}
@@ -334,6 +434,7 @@ public class GlassOpacityTuner
 			tintR = oldTintR;
 			tintG = oldTintG;
 			tintB = oldTintB;
+			appearanceCustomized = oldAppearanceCustomized;
 
 			if (tuningHadOverride != 0)
 			{
@@ -355,12 +456,17 @@ public class GlassOpacityTuner
 	int applyAppearance( Part target, int alpha, int red, int green, int blue )
 	{
 		if (!ensureOverride(target))
+		{
+			logPreviewState(target, "APPLY-ENSURE-FAILED");
 			return 0;
+		}
 
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
-			System.print("Glass opacity: live render instance not found; restoring override.");
+			logPreviewState(target, "APPLY-NO-INSTANCE");
+			if (previewRefreshInProgress != 0)
+				return 0;
 			restoreOverride(target);
 			return 0;
 		}
@@ -372,6 +478,7 @@ public class GlassOpacityTuner
 		active.setColor(argb);
 		renderInstance = instanceID;
 		hasOpacityOverride = 1;
+		logPreviewState(target, "APPLY-COLOR-SET instance=" + instanceID + " argb=" + argb);
 		return 1;
 	}
 
@@ -380,10 +487,20 @@ public class GlassOpacityTuner
 		if (privateTypeHandle)
 		{
 			if (target.getRenderType() == privateTypeHandle.id())
+			{
+				// During inventory preview the part can receive its temporary type
+				// before the engine creates/rebuilds its live render child. On later
+				// retries, rebind the type if no child of that type exists yet.
+				if (previewRefreshInProgress != 0 &&
+					findGlassRenderInstance(target.id(), privateTypeHandle.id()) == 0)
+				{
+					target.setRenderType(originalRenderType);
+					target.setRenderType(privateTypeHandle.id());
+				}
 				return 1;
+			}
 
 			// Do not silently overwrite a render-type change made by another system.
-			System.print("Glass opacity: render type changed externally; aborting override.");
 			return 0;
 		}
 
@@ -391,7 +508,6 @@ public class GlassOpacityTuner
 		int originalMeshID = target.getMesh();
 		if (originalRenderID == 0 || originalMeshID == 0)
 		{
-			System.print("Glass opacity: part has no render type or mesh.");
 			return 0;
 		}
 
@@ -403,7 +519,6 @@ public class GlassOpacityTuner
 
 		if (sourceType.type() != 14 || sourceMesh.type() != 5 || targetMesh.type() != 5)
 		{
-			System.print("Glass opacity: expected render type/mesh resource types are unavailable.");
 			return 0;
 		}
 
@@ -415,7 +530,6 @@ public class GlassOpacityTuner
 		if (privateType.id() == 0 || privateType.type() != 14)
 		{
 			if (privateType.id() != 0) privateType.destroy();
-			System.print("Glass opacity: failed to duplicate the source render type.");
 			return 0;
 		}
 
@@ -432,7 +546,6 @@ public class GlassOpacityTuner
 
 		if (target.getRenderType() != privateType.id() || target.getMesh() != originalMeshID)
 		{
-			System.print("Glass opacity: private render type did not bind as expected; restoring.");
 			restoreOverride(target);
 			return 0;
 		}
@@ -440,7 +553,8 @@ public class GlassOpacityTuner
 		int instanceID = findGlassRenderInstance(target.id(), privateType.id());
 		if (instanceID == 0)
 		{
-			System.print("Glass opacity: private type bound but live render instance was not found; restoring.");
+			if (previewRefreshInProgress != 0)
+				return 1;
 			restoreOverride(target);
 			return 0;
 		}
@@ -486,16 +600,12 @@ public class GlassOpacityTuner
 			target.setRenderType(originalRenderType);
 			if (target.getRenderType() != originalRenderType)
 			{
-				System.print("Glass opacity: failed to restore original render type; keeping temporary resources alive.");
 				return 0;
 			}
 
-			if (target.getMesh() != originalMesh)
-				System.print("Glass opacity: original type restored, but mesh ID differs from its saved ID.");
 		}
 		else if (target.getRenderType() != originalRenderType)
 		{
-			System.print("Glass opacity: render type changed externally; leaving it untouched and keeping temporary resources alive.");
 			return 0;
 		}
 

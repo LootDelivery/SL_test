@@ -167,6 +167,20 @@ public class VisualInventory extends Inventory
 			panels[i].show();
 
 		setEventMask( EVENT_CURSOR|EVENT_COMMAND );
+
+		// The first preview refresh may run before the renderer creates child instances.
+		// Retry all visible inventory slots after their viewports have been shown.
+		refreshGlassOpacityPreviews();
+	}
+
+	public void refreshGlassOpacityPreviews()
+	{
+		for( int i=0; i<panels.length; i++ )
+		{
+			InventoryPanel panel = panels[i];
+			if( panel && panel.invItem instanceof InventoryItem_Part )
+				((InventoryItem_Part)panel.invItem).refreshGlassOpacityPreview();
+		}
 	}
 
 	public void hide()

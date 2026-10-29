@@ -605,6 +605,9 @@ public class Part extends GameType
 
 	public void updatevariables() { need_update = 0; }
 	public void updateDamage() {}
+	// Optional polymorphic hook for custom appearance in inventory previews.
+	public void refreshGlassOpacityPreview() {}
+
 	public void install() {}	//called after installing into sg.
 	public void remove() {}		//called before removing from sg. (properly disassembling)
 	public void falloff() {}	//called before removing from sg. (just falling off by hit or sg.)

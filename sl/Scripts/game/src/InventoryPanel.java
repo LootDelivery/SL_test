@@ -184,6 +184,11 @@ public class InventoryPanel
 	//what to do when panel is focused
 	public void focusHook()
 	{
+		// Retry restoration across all visible slots while the inventory is active.
+		// Render children may be created a frame after each item's initial show().
+		if( inv )
+			inv.refreshGlassOpacityPreviews();
+
 		if( flags )
 		{//rotating enabled?
 			if( cam )
