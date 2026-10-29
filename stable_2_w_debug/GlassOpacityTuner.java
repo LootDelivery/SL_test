@@ -304,7 +304,7 @@ public class GlassOpacityTuner
 		Style knobStyle = new Style(0.04, 0.05, Frontend.smallFont,
 			Text.ALIGN_RIGHT, new ResourceRef(Osd.RID_SLD_KNOB));
 		Slider opacitySlider = tuningOsd.createSlider(sliderStyle, knobStyle,
-			0.0, 0.35, "Glass opacity", CMD_GLASS_OPACITY,
+			0.0, -0.4, "Glass opacity", CMD_GLASS_OPACITY,
 			percent, 0.0, 100.0, 21);
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
