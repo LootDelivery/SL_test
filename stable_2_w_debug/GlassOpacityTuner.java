@@ -117,26 +117,25 @@ public class GlassOpacityTuner
 		return (value * 255 + 50) / 100;
 	}
 
-	// Preset 0 restores the tint that was active when the tuning menu opened.
+	// The SLRR MultiChoice cycles through these named tint presets.
 	String[] getTintNames()
 	{
-		String[] names = new String[16];
-		names[0] = "Original tint";
-		names[1] = "Stock";
-		names[2] = "Black";
-		names[3] = "Charcoal";
-		names[4] = "Gray";
-		names[5] = "Silver";
-		names[6] = "White";
-		names[7] = "Red";
-		names[8] = "Orange";
-		names[9] = "Yellow";
-		names[10] = "Green";
-		names[11] = "Cyan";
-		names[12] = "Blue";
-		names[13] = "Purple";
-		names[14] = "Pink";
-		names[15] = "Brown";
+		String[] names = new String[15];
+		names[0] = "Stock";
+		names[1] = "Black";
+		names[2] = "Charcoal";
+		names[3] = "Gray";
+		names[4] = "Silver";
+		names[5] = "White";
+		names[6] = "Red";
+		names[7] = "Orange";
+		names[8] = "Yellow";
+		names[9] = "Green";
+		names[10] = "Cyan";
+		names[11] = "Blue";
+		names[12] = "Purple";
+		names[13] = "Pink";
+		names[14] = "Brown";
 		return names;
 	}
 
@@ -293,7 +292,8 @@ public class GlassOpacityTuner
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
 		String[] tintNames = getTintNames();
-		int selectedTint = findTintPreset();
+		int selectedTint = findTintPreset() - 1;
+		if (selectedTint < 0) selectedTint = 0;
 		m.addItem( "Glass color", CMD_GLASS_TINT, selectedTint, tintNames, null );
 	}
 
@@ -325,24 +325,13 @@ public class GlassOpacityTuner
 		else if (m.cmd == CMD_GLASS_TINT)
 		{
 			previous = findTintPreset();
-			requested = clampTintPreset(((MultiChoice)m.gadget).value);
+			// UI indices are 0..14; internal preset indices are 1..15.
+			// Stock is index 0, so Brown wraps directly to Stock.
+			requested = clampTintPreset(((MultiChoice)m.gadget).value + 1);
 
-			int red;
-			int green;
-			int blue;
-			if (requested == 0)
-			{
-				// Restore the tint that was active when this tuning menu opened.
-				red = oldTintR;
-				green = oldTintG;
-				blue = oldTintB;
-			}
-			else
-			{
-				red = tintRed(requested);
-				green = tintGreen(requested);
-				blue = tintBlue(requested);
-			}
+			int red = tintRed(requested);
+			int green = tintGreen(requested);
+			int blue = tintBlue(requested);
 
 			if (applyAppearance(target, opacity, red, green, blue))
 			{
@@ -350,11 +339,13 @@ public class GlassOpacityTuner
 				tintG = green;
 				tintB = blue;
 				appearanceCustomized = 1;
-				m.gadget.setValue(findTintPreset());
+				m.gadget.setValue(findTintPreset() - 1);
 			}
 			else
 			{
-				m.gadget.setValue(previous);
+				int previousSelection = previous - 1;
+				if (previousSelection < 0) previousSelection = 0;
+				m.gadget.setValue(previousSelection);
 			}
 		}
 	}
