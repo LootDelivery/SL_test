@@ -11,7 +11,7 @@ import java.game.parts.*;
 public class GlassOpacityTuner
 {
 	static final int CMD_GLASS_OPACITY = 9301;
-	static final int CMD_GLASS_TINT = 9305;
+	static final int CMD_GLASS_TINT_PRESET_BASE = 9320;
 
 	// The chosen alpha is persisted in the part record. Runtime render handles are rebuilt after installation.
 	int opacity = 127;
@@ -39,8 +39,7 @@ public class GlassOpacityTuner
 	int originalRenderType = 0;
 	int originalMesh = 0;
 	int renderInstance = 0;
-	Button glassColorButton;
-	java.game.GlassTintPresetDialog activeTintPicker;
+	Button[] glassTintButtons;
 
 	// Version-4 part payload: override marker, alpha, and RGB tint. Runtime handles are not saved.
 	public void save( File saveGame )
@@ -301,8 +300,19 @@ public class GlassOpacityTuner
 			percent, 0.0, 100.0, 21, null );
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
-		glassColorButton = m.addItem( getTintLabel(), CMD_GLASS_TINT,
-			"Choose glass tint" );
+		 		// Keep preset selection in this tuning menu. A second Dialog steals input
+		// from the parent and can make its OK/CANCEL buttons unreachable.
+		String[] tintNames = getTintNames();
+		int selectedTint = findTintPreset();
+		glassTintButtons = new Button[tintNames.length];
+		for (int i = 0; i < tintNames.length; i++)
+		{
+			String label = tintNames[i];
+			if (selectedTint == i + 1)
+				label = "* " + label;
+			glassTintButtons[i] = m.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i,
+				"Set glass color to " + tintNames[i]);
+		}
 	}
 
 	public void handleMessage( Event m, Part target )
@@ -330,15 +340,10 @@ public class GlassOpacityTuner
 					Float.toString(previous, "   %1.0f%%") );
 			}
 		}
-		else if (m.cmd == CMD_GLASS_TINT)
+		else if (m.cmd >= CMD_GLASS_TINT_PRESET_BASE &&
+			m.cmd < CMD_GLASS_TINT_PRESET_BASE + 15)
 		{
-			// The picker is modeless, so do not block this tuning dialog's event loop.
-			if (!activeTintPicker)
-			{
-				previous = findTintPreset();
-				activeTintPicker = new java.game.GlassTintPresetDialog(getTintNames(), previous, this, target);
-				activeTintPicker.show();
-			}
+			selectTintPreset(target, m.cmd - CMD_GLASS_TINT_PRESET_BASE + 1);
 		}
 	}
 
@@ -355,23 +360,30 @@ public class GlassOpacityTuner
 			tintG = green;
 			tintB = blue;
 			appearanceCustomized = 1;
-			if (glassColorButton)
-				glassColorButton.changeLabelText(getTintLabel());
+			updateTintPresetLabels();
 		}
 	}
 
-	public void tintPickerClosed( java.game.GlassTintPresetDialog picker )
+	 	void updateTintPresetLabels()
 	{
-		if (activeTintPicker == picker)
-			activeTintPicker = null;
+		if (!glassTintButtons)
+			return;
+
+		int selectedTint = findTintPreset();
+		String[] tintNames = getTintNames();
+		for (int i = 0; i < tintNames.length; i++)
+		{
+			String label = tintNames[i];
+			if (selectedTint == i + 1)
+				label = "* " + label;
+			if (glassTintButtons[i])
+				glassTintButtons[i].changeLabelText(label);
+		}
 	}
 
 	public void endTuningSession( int cancelled, Part target )
 	{
-		// The picker must not outlive the tuning dialog.
-		if (activeTintPicker)
-			activeTintPicker.dismiss();
-		if (cancelled)
+				if (cancelled)
 		{
 			opacity = oldOpacity;
 			tintR = oldTintR;
