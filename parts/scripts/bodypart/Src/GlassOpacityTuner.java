@@ -153,7 +153,7 @@ public class GlassOpacityTuner
 
 		// Mirror the proven Painter probe: the game writes this as an SDAT file,
 		// so rewrite the complete accumulated buffer after each diagnostic event.
-		previewLogBuffer += line + "\\n";
+		previewLogBuffer += line + "\n";
 		previewLogLineCount++;
 
 		File previewLog = new File(PREVIEW_LOG_PATH);
