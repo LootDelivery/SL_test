@@ -20,7 +20,7 @@ public class InventoryItem_Part extends InventoryItem
 	// Temporary diagnostic for tracing whether inventory thumbnails call the glass preview hook.
 	static String inventoryPreviewTrace = "";
 	static int inventoryPreviewTraceLines = 0;
-	final static String INVENTORY_PREVIEW_TRACE_PATH = "slrr_inventory_preview_trace.sdat";
+	final static String INVENTORY_PREVIEW_TRACE_PATH = "slrr_inventory_preview_trace_virtual_hook.sdat";
 
 	void logInventoryPreviewTrace( String phase, Part p )
 	{
@@ -44,6 +44,8 @@ public class InventoryItem_Part extends InventoryItem
 			+ " windshield=" + isWindshield
 			+ " renderType=" + renderType
 			+ " mesh=" + meshID;
+		if (inventoryPreviewTraceLines == 0)
+			inventoryPreviewTrace = "[InventoryGlassTrace] BUILD-MARKER virtual-hook-v1\\n";
 		inventoryPreviewTrace += line + "\n";
 		inventoryPreviewTraceLines++;
 		File traceFile = new File(INVENTORY_PREVIEW_TRACE_PATH);
