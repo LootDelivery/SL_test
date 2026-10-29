@@ -1,32 +1,35 @@
-# Glass opacity and tint controls — persistence prototype
+# Glass opacity, tint presets, and inventory preview
 
-Branch: `glass-opacity-tint-controls`
+Branch: `glass-opacity-palette-preview`
 
-This revision keeps the working runtime render override and adds fine-grained tint controls.
+This revision builds on the working version-4 persistence branch.
 
-## Features
+## Changes
 
-- **Glass opacity:** 0–100%, in 5% increments (21 positions). The selected percentage is mapped to the 0–255 alpha channel.
-- **Glass tint:** independent Red, Green, Blue sliders from 0 to 255. They use single-unit resolution to preserve the stock tint (22, 13, 13) exactly until the user changes it.
-- **Persistence:** part-save format version 4. Version-3 Window/Windshield records still read their original two-value payload and default to stock RGB tint; v4 records also read RGB.
-- **Render internals:** temporary RenderRef/resource handles are rebuilt after install and are not serialized.
+- **Opacity:** remains a 0–100% selector in 5% increments.
+- **Tint:** replaces the three RGB sliders with a named preset selector: Custom/current, Stock, Black, Charcoal, Gray, Silver, White, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, and Brown.
+- **Persistence:** the RGB triplet is still written using the existing version-4 part payload. No further save-format bump is required.
+- **Inventory preview:** adds a refresh callback to `Window` and `Windshield`, and calls it from `InventoryItem_Part.show()` after the inventory preview camera and light are created. This reapplies the saved alpha/RGB to the preview's current live render instance.
 
-## Reflection strength
+## Files
 
-No reflection-strength slider is included yet. In the renderer, the glass reflection contribution is driven by the mesh material's `env_factor`; the currently validated `RenderRef.setColor()` instance override changes colour channels, not that factor. Wiring a slider to tint or transparency would not be an independent reflection control. We need a supported way to edit or swap a per-instance material parameter first.
+- `parts/scripts/bodypart/Src/GlassOpacityTuner.java`
+- `parts/scripts/bodypart/Src/Window.java`
+- `parts/scripts/bodypart/Src/Windshield.java`
+- `parts/scripts/src/Part.java` (same version-4 file as the previously working branch; no further change intended)
+- `sl/Scripts/game/src/InventoryItem_Part.java` (inventory preview hook; based on the public stock script snapshot)
 
-## Test on a disposable copy/save
+## Test on a backed-up game/save
 
-1. Back up source files and the test save.
-2. Compile `Part.java`, `GlassOpacityTuner.java`, `Window.java`, and `Windshield.java` together.
-3. Load a current version-3 save and confirm it loads, buys cars, and retains existing alpha.
-4. Tune opacity to 35%, tint to a visible colour (for example R=80, G=160, B=220), confirm the dialog, save, exit, and reload.
-5. Confirm both the opacity and RGB tint survive a full restart.
-6. Open the tuning dialog again and test Cancel; both opacity and tint should revert.
-7. Save and reload again and verify car purchase/load.
+1. Copy the updated `GlassOpacityTuner.java`, `Window.java`, and `Windshield.java`.
+2. Merge the import and two refresh calls from the supplied `InventoryItem_Part.java` into your installed version. If your local file differs from the supplied snapshot, do not replace your whole file blindly.
+3. Do **not** downgrade `Part.java`: keep the version-4 save format from the working tint-controls branch.
+4. Load a current save, check purchase/load, set tint and opacity, save, exit, and reload.
+5. Put a tuned windshield/window into the parts inventory and inspect it before installing it on a car. Then install it and verify its appearance remains the same.
+6. Test Cancel in the tuning menu.
 
-## Compatibility warning
+## Limitations
 
-- This has **not** been compiled or tested in-game by the authoring environment. The first run must use a disposable copy.
-- The global part save-format version is now 4. Existing version-3 saves should be read using their old two-integer Window/Windshield payload, then future saves are written as version 4.
-- Do not revert to the old source tree after saving version-4 data unless you have backups.
+- This has not been compiled or tested in-game by the authoring environment; the first run must use a backup.
+- The inventory hook runs after the preview camera/light is created. If a particular build creates the render instance later than this, the log may report that the preview instance was not found; the hook timing will then need adjusting against that build.
+- Reflection strength is still not independently adjustable. The tested `RenderRef.setColor()` path controls ARGB tint/alpha, not the material's `env_factor`.
