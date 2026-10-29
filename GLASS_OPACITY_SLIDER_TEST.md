@@ -1,32 +1,28 @@
-# Glass opacity slider prototype
+# Glass opacity slider — persistence prototype
 
-Branch: `glass-opacity-slider-prototype`
+Branch: `glass-opacity-persistence-prototype`
 
-This is an experimental source prototype for the stock screwdriver / **Fine tune specific parts** dialog. It uses the already-tested runtime render-type override from `Painter_RenderAlpha_Test.java`.
+This experimental revision adds a versioned per-part payload for Window/Windshield opacity.
 
-## Files
+## What changed
 
-- `parts/scripts/bodypart/Src/GlassOpacityTuner.java` — common runtime override + slider logic.
-- `parts/scripts/bodypart/Src/Window.java` — delegates screwdriver tuning to the helper.
-- `parts/scripts/bodypart/Src/Windshield.java` — delegates screwdriver tuning to the helper.
+- `Part.java`: bumps `SAVEFILEVERSION_PART` from 2 to 3 and records each loaded part's own file version in `file_ver`. This avoids using the global `save_version` after recursive child loads.
+- `GlassOpacityTuner.java`: stores two integers after a Window/Windshield record: an override marker and alpha (0–255). The transient render type/resource IDs are not serialized.
+- `Window.java` and `Windshield.java`: load the payload only for v3+ records, save it after the base record, and rebuild the rendering override from `install()` after the part is attached to the scene graph.
+- v2 parts are expected to load without attempting to read opacity bytes.
 
-## Save/load status
+## Test on a disposable copy/save only
 
-This is a runtime-only revision. It does **not** append opacity bytes to part saves, and the `Part.java` save-format version should stay at the value provided by the user's original game sources. Earlier payload serialization attempts caused `Windshield.load()` to read non-opacity data and break car purchase/loading. Persistence must be implemented against the exact installed `Part.java` serialization contract before it is re-enabled.
+1. Back up the source files and the entire test save.
+2. Compile the modified `Part.java`, `GlassOpacityTuner.java`, `Window.java`, and `Windshield.java` together.
+3. Load a pre-existing v2 save. Confirm it loads, and that buying a car still works.
+4. Open the screwdriver menu on a windshield/window, set an unusual value (for example 40%), confirm/OK, save, exit fully, and reload.
+5. Check that the same glass retains its opacity. Also check an untouched window remains at its normal appearance.
+6. Save and reload again, and repeat the purchase/load checks.
 
-## First test
+## Important limitations
 
-1. Back up the game's existing `Window.java` and `Windshield.java` (and any compiled class/cache files your source setup uses).
-2. Copy these three source files to the matching paths in a **test copy** of the game/source tree. Do not overwrite a more heavily modified local version without merging the added methods.
-3. Launch the game and open the stock screwdriver / **Fine tune specific parts** dialog on a windshield/window part.
-4. Move **Glass opacity** left and right. Lower values should make the glass more transparent; higher values should make it more opaque.
-5. Test **OK** and **Cancel** separately. Cancel should restore the previous state, and cancelling the first change should restore the original render type.
-
-## Limitations / safety
-
-- This has **not yet been compiled or tested in-game**. Only source-level structural checks have been performed.
-- The runtime recipe was validated on the user's tested build using `frontend:0x21r` (render type) and `frontend:0x5Er` (mesh). The code checks resource types but cannot inspect the render type's embedded flags through the regular Java API.
-- The current code uses the tested glass diffuse RGB `(22, 13, 13)`; another car's window may use a different tint.
-- This prototype stores the override flag and alpha value at the end of each Window/Windshield part record, using part-save format version 4.
-- The new code is designed to save while the temporary render type is active: the base save records the original mesh ID, while the per-part payload stores only the override flag and alpha. Still test this first on a disposable save before using a valuable career save.
-- If the game reports a compiler/runtime error, restore the backed-up files and share the exact error log before trying further changes.
+- This has **not been compiled or tested in-game** by the authoring environment. The first in-game test must use a disposable copy.
+- The save-format bump is global: all parts written by this source tree will have record version 3, while only Window/Windshield write the extra two integers.
+- If loading an old save, saving it in this branch, then reverting to unmodified v2 scripts is **not guaranteed to be compatible**. Keep backups.
+- If the slider works but the saved value does not return, capture the SLRR log and tell us whether the opacity override was applied immediately after the load/install process.
