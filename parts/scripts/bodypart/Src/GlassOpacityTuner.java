@@ -228,7 +228,7 @@ public class GlassOpacityTuner
 				; // Logging unavailable in this SLRR script API.
 			}
 			else
-				System.print("Glass opacity: saved override will remain pending; install-time render instance was unavailable.");
+				; // Logging unavailable in this SLRR script API.
 		}
 	}
 
@@ -269,7 +269,7 @@ public class GlassOpacityTuner
 			target.setRenderType(privateTypeHandle.id());
 		else if (currentType != privateTypeHandle.id())
 		{
-			System.print("Glass opacity: preview render type was changed externally; leaving it untouched.");
+			; // Logging unavailable in this SLRR script API.
 			previewRefreshInProgress = 0;
 			return;
 		}
@@ -279,7 +279,7 @@ public class GlassOpacityTuner
 		{
 			if (previewRetryLogged == 0)
 			{
-				System.print("Glass opacity: inventory preview render instance not ready; will retry.");
+				; // Logging unavailable in this SLRR script API.
 				previewRetryLogged = 1;
 			}
 			previewRefreshInProgress = 0;
@@ -393,12 +393,12 @@ public class GlassOpacityTuner
 			{
 				if (previewRetryLogged == 0)
 				{
-					System.print("Glass opacity: inventory preview render instance not ready; will retry.");
+					; // Logging unavailable in this SLRR script API.
 					previewRetryLogged = 1;
 				}
 				return 0;
 			}
-			System.print("Glass opacity: live render instance not found; restoring override.");
+			; // Logging unavailable in this SLRR script API.
 			restoreOverride(target);
 			return 0;
 		}
@@ -422,7 +422,7 @@ public class GlassOpacityTuner
 				return 1;
 
 			// Do not silently overwrite a render-type change made by another system.
-			System.print("Glass opacity: render type changed externally; aborting override.");
+			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
@@ -471,7 +471,7 @@ public class GlassOpacityTuner
 
 		if (target.getRenderType() != privateType.id() || target.getMesh() != originalMeshID)
 		{
-			System.print("Glass opacity: private render type did not bind as expected; restoring.");
+			; // Logging unavailable in this SLRR script API.
 			restoreOverride(target);
 			return 0;
 		}
@@ -481,7 +481,7 @@ public class GlassOpacityTuner
 		{
 			if (previewRefreshInProgress != 0)
 				return 1; // Keep the temporary type/resources alive for the next preview refresh.
-			System.print("Glass opacity: private type bound but live render instance was not found; restoring.");
+			; // Logging unavailable in this SLRR script API.
 			restoreOverride(target);
 			return 0;
 		}
@@ -527,7 +527,7 @@ public class GlassOpacityTuner
 			target.setRenderType(originalRenderType);
 			if (target.getRenderType() != originalRenderType)
 			{
-				System.print("Glass opacity: failed to restore original render type; keeping temporary resources alive.");
+				; // Logging unavailable in this SLRR script API.
 				return 0;
 			}
 
@@ -536,7 +536,7 @@ public class GlassOpacityTuner
 		}
 		else if (target.getRenderType() != originalRenderType)
 		{
-			System.print("Glass opacity: render type changed externally; leaving it untouched and keeping temporary resources alive.");
+			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
