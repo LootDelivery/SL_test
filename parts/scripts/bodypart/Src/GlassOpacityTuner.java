@@ -33,6 +33,12 @@ public class GlassOpacityTuner
 	int previewRefreshInProgress = 0;
 	int previewDebugLines = 0;
 
+	// Diagnostic output uses the same SDAT writer as the working Painter probe.
+	// Static buffer keeps messages from different Window/Windshield instances.
+	static String previewLogBuffer = "";
+	static int previewLogLineCount = 0;
+	final static String PREVIEW_LOG_PATH = "slrr_render_probe.sdat";
+
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
 	ResourceRef targetMeshHandle;
@@ -99,7 +105,7 @@ public class GlassOpacityTuner
 	// Uses System.log (supported in this installation); remove after diagnosis.
 	void logPreviewState( Part target, String phase )
 	{
-		if (previewDebugLines >= 40) return;
+		if (previewDebugLines >= 40 || previewLogLineCount >= 200) return;
 		if (target && appearanceCustomized == 0 && restorePending == 0 && hasOpacityOverride == 0) return;
 
 		int partID = 0;
@@ -145,7 +151,22 @@ public class GlassOpacityTuner
 			line += " renderChildren=" + renderChildren;
 		}
 
-		System.log(line);
+		// Mirror the proven Painter probe: the game writes this as an SDAT file,
+		// so rewrite the complete accumulated buffer after each diagnostic event.
+		previewLogBuffer += line + "\\n";
+		previewLogLineCount++;
+
+		File previewLog = new File(PREVIEW_LOG_PATH);
+		if (previewLog.open(File.MODE_WRITE))
+		{
+			previewLog.write(previewLogBuffer);
+			previewLog.close();
+		}
+		else
+		{
+			// Retain the buffer so a later preview attempt can retry the write.
+			System.log("[GlassOpacityPreview] Could not open " + PREVIEW_LOG_PATH + " for writing.");
+		}
 		previewDebugLines++;
 	}
 
