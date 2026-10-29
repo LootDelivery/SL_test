@@ -10,14 +10,9 @@ This is an experimental source prototype for the stock screwdriver / **Fine tune
 - `parts/scripts/bodypart/Src/Window.java` — delegates screwdriver tuning to the helper.
 - `parts/scripts/bodypart/Src/Windshield.java` — delegates screwdriver tuning to the helper.
 
-## Saving the opacity
+## Save/load status
 
-The opacity value is now serialized as part-specific data, and re-applied when that part loads. To keep existing saves compatible, the shared part format version must be bumped once:
-
-- For the current source version that has `SAVEFILEVERSION_PART = 3`, apply [PART_SAVE_VERSION_4.patch](PART_SAVE_VERSION_4.patch) to `parts/scripts/src/Part.java` so the constant becomes `4`.
-- The `Window.java` and `Windshield.java` changes read the extra field only when `file_ver >= 4`; older version-3 saves will load with factory glass settings. New saves store whether an opacity override exists, and the alpha value.
-- The temporary render-type ID is **not** saved; load recreates the private render type and applies the saved alpha. If re-application fails, a message is written to the game's script log.
-- The patch assumes the current Part.java source has an instance field `file_ver` and version 3 format. The `parts/scripts/src/Part.java` file already present in this test branch is an older v2 snapshot; **do not copy that file into the game**. Apply the one-line patch to the `Part.java` you currently compile against only if it has the shown version-3 line. If it does not, stop and compare versions before compiling.
+This is a runtime-only revision. It does **not** append opacity bytes to part saves, and the `Part.java` save-format version should stay at the value provided by the user's original game sources. Earlier payload serialization attempts caused `Windshield.load()` to read non-opacity data and break car purchase/loading. Persistence must be implemented against the exact installed `Part.java` serialization contract before it is re-enabled.
 
 ## First test
 
