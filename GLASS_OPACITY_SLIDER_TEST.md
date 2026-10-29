@@ -41,13 +41,6 @@ Do not use the older public snapshot unchanged: it referenced `IIT_PART` and `ty
 - The inventory preview retry is wired in but remains **unverified** until compiled and tested in the user's installation.
 - Reflection strength remains separate work; `RenderRef.setColor()` changes ARGB, not material `env_factor`.
 
-## Temporary save/restore diagnostics
+## Save/restore note
 
-The current `GlassOpacityTuner.java` includes temporary `System.print` diagnostics. Recompile that file, save the game, fully exit, then load the same save. Capture these lines:
-
-- `Glass opacity SAVE:` shows the exact flag, alpha, and RGB written.
-- `Glass opacity LOAD:` shows the version and values read back.
-- `Glass opacity PREVIEW restore pending:` shows that a saved override was detected.
-- `Glass opacity RESTORED on install:` or `Glass opacity RESTORED in inventory preview:` confirms that the appearance was reapplied.
-
-If the values in SAVE and LOAD match but the glass still looks stock, the serialization is working and the remaining issue is runtime reapplication/rendering. If LOAD reports default RGB or `override=0`, compare the SAVE line for that same glass part first.
+The SLRR script API in this installation does not expose `System.print(String)`. Do not add such calls for diagnostics: they compile but trigger a runtime `Thread::callMethod` error when executed. The current `GlassOpacityTuner.java` has these calls removed.
