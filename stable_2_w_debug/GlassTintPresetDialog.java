@@ -18,8 +18,8 @@ public class GlassTintPresetDialog extends Dialog
 
 	public GlassTintPresetDialog( String[] options, int selectedPreset )
 	{
-		// This is a transparent child popup over the existing tuning panel.
-		// High priority gives it focus without drawing another background/dimming layer.
+		// This popup is compiled alongside GlassOpacityTuner but stays in java.game
+		// so it can access Player.controller and use the native Dialog API.
 		super(GameLogic.player.controller,
 			Dialog.DF_WIDE|Dialog.DF_MODAL|Dialog.DF_HIGHPRI,
 			"GLASS COLOR", "CANCEL");
