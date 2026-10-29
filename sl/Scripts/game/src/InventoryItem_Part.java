@@ -166,14 +166,19 @@ public class InventoryItem_Part extends InventoryItem
 			p.setMatrix( null, null );
 			ip.createDefCamera( getPart().getInfo( GameType.GII_SIZE )/100.0, 1 );
 			ip.createDefLight();
-
-			// The preview render instance may be recreated when the part is moved
-			// from a car to the inventory. Re-apply saved/live glass appearance now.
-			if( p instanceof Window )
-				((Window)p).refreshGlassOpacityPreview();
-			else if( p instanceof Windshield )
-				((Windshield)p).refreshGlassOpacityPreview();
+			refreshGlassOpacityPreview();
 		}
+	}
+
+	// Called on show and while this preview is focused, so delayed render children
+	// can receive the saved appearance once the engine creates them.
+	public void refreshGlassOpacityPreview()
+	{
+		Part p = getPart();
+		if( p instanceof Window )
+			((Window)p).refreshGlassOpacityPreview();
+		else if( p instanceof Windshield )
+			((Windshield)p).refreshGlassOpacityPreview();
 	}
 
 	public void hide( InventoryPanel ip )
