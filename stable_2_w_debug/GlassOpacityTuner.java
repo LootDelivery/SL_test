@@ -300,7 +300,7 @@ public class GlassOpacityTuner
 			percent, 0.0, 100.0, 21, null );
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
-		 		// Keep preset selection in this tuning menu. A second Dialog steals input
+		// Keep preset selection in this tuning menu. A second Dialog steals input
 		// from the parent and can make its OK/CANCEL buttons unreachable.
 		String[] tintNames = getTintNames();
 		int selectedTint = findTintPreset();
@@ -364,7 +364,7 @@ public class GlassOpacityTuner
 		}
 	}
 
-	 	void updateTintPresetLabels()
+	void updateTintPresetLabels()
 	{
 		if (!glassTintButtons)
 			return;
@@ -383,7 +383,7 @@ public class GlassOpacityTuner
 
 	public void endTuningSession( int cancelled, Part target )
 	{
-				if (cancelled)
+		if (cancelled)
 		{
 			opacity = oldOpacity;
 			tintR = oldTintR;
