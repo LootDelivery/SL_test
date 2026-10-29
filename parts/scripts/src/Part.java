@@ -36,7 +36,7 @@ public class Part extends GameType
 	final static int MF_PROCHARGER2 = parts:0x0042r;
 	final static int MF_KN		= parts:0x0044r;
 
-	final static int SAVEFILEVERSION_PART = 3;
+	final static int SAVEFILEVERSION_PART = 4;
 	static int save_version = SAVEFILEVERSION_PART;
 	protected int file_ver = SAVEFILEVERSION_PART;
 
