@@ -5,7 +5,7 @@ Working snapshot: `stable_2_w_debug/` on `main`.
 ## Features
 
 - **Opacity:** 0–100% selector in 5% increments.
-- **Glass color:** a separate compact modal list shows the 15 named presets. The tuning row displays the active preset name; selecting a color applies it immediately and closes the list. The picker is a transparent child dialog (8 + 7 choices in two centered columns) with high priority, so it appears above the tuning window without a second background or dimming layer. The class is named `GlassTintPresetDialog` to avoid stale/package-local `GlassTintDialog` class collisions.
+- **Glass color:** a separate compact modal list shows the 15 named presets. The tuning row displays the active preset name; selecting a color applies it immediately and closes the list. The picker is a modeless high-priority overlay with 8 + 7 choices in two columns. It uses `show()` instead of blocking `display()`, so the main tuning dialog can still receive OK/CANCEL. The class is named `GlassTintPresetDialog` to avoid stale/package-local `GlassTintDialog` class collisions.
 - **Tint presets:** Stock, Black, Charcoal, Gray, Silver, White, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, and Brown.
 - **Selection:** the list marks the current preset with `*`. There is no cycling or wraparound behavior; each click selects the named color directly.
 - **Persistence:** the existing version-4 part payload stores alpha and RGB tint; no additional save-format bump is used.
