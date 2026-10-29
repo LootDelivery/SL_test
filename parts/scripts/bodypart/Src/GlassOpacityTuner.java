@@ -28,6 +28,9 @@ public class GlassOpacityTuner
 	int oldAppearanceCustomized = 0;
 	int restorePending = 0;
 	int tuningHadOverride = 0;
+	// Inventory preview render children can appear one frame after show().
+	// Keep the temporary render type alive until a child instance exists.
+	int previewRefreshInProgress = 0;
 
 	RenderRef sourceTypeHandle;
 	ResourceRef sourceMeshHandle;
@@ -234,10 +237,13 @@ public class GlassOpacityTuner
 	// Moving a part between the car and inventory can recreate its child render instance.
 	public void onInventoryPreview( Part target )
 	{
+		previewRefreshInProgress = 1;
+
 		if (restorePending != 0 || hasOpacityOverride == 0)
 		{
 			if (restorePending != 0 && applyAppearance(target, opacity, tintR, tintG, tintB))
 				restorePending = 0;
+			previewRefreshInProgress = 0;
 			return;
 		}
 
@@ -245,6 +251,7 @@ public class GlassOpacityTuner
 		{
 			if (applyAppearance(target, opacity, tintR, tintG, tintB))
 				restorePending = 0;
+			previewRefreshInProgress = 0;
 			return;
 		}
 
@@ -253,18 +260,21 @@ public class GlassOpacityTuner
 			target.setRenderType(privateTypeHandle.id());
 		else if (currentType != privateTypeHandle.id())
 		{
+			previewRefreshInProgress = 0;
 			return;
 		}
 
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
+			previewRefreshInProgress = 0;
 			return;
 		}
 
 		RenderRef active = new RenderRef(instanceID);
 		active.setColor(packAppearanceColor(opacity, tintR, tintG, tintB));
 		renderInstance = instanceID;
+		previewRefreshInProgress = 0;
 	}
 
 	public void buildTuningMenu( Menu m, Part target )
@@ -367,6 +377,8 @@ public class GlassOpacityTuner
 		int instanceID = findGlassRenderInstance(target.id(), privateTypeHandle.id());
 		if (instanceID == 0)
 		{
+			if (previewRefreshInProgress != 0)
+				return 0;
 			restoreOverride(target);
 			return 0;
 		}
@@ -441,6 +453,8 @@ public class GlassOpacityTuner
 		int instanceID = findGlassRenderInstance(target.id(), privateType.id());
 		if (instanceID == 0)
 		{
+			if (previewRefreshInProgress != 0)
+				return 1;
 			restoreOverride(target);
 			return 0;
 		}
