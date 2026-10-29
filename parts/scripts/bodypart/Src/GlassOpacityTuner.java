@@ -23,6 +23,9 @@ public class GlassOpacityTuner
 	int oldTintG = 13;
 	int oldTintB = 13;
 	int hasOpacityOverride = 0;
+	// Persistent user choice is separate from the temporary render-type override.
+	int appearanceCustomized = 0;
+	int oldAppearanceCustomized = 0;
 	int restorePending = 0;
 	int tuningHadOverride = 0;
 
@@ -39,7 +42,7 @@ public class GlassOpacityTuner
 	public void save( File saveGame )
 	{
 		int savedOverride = 0;
-		if (hasOpacityOverride != 0 || restorePending != 0)
+		if (appearanceCustomized != 0 || hasOpacityOverride != 0 || restorePending != 0)
 			savedOverride = 1;
 
 		saveGame.write( savedOverride );
@@ -53,6 +56,8 @@ public class GlassOpacityTuner
 	{
 		int savedOverride = saveGame.readInt();
 		int savedOpacity = saveGame.readInt();
+		appearanceCustomized = (savedOverride != 0) ? 1 : 0;
+		oldAppearanceCustomized = appearanceCustomized;
 
 		if (savedOpacity < 0) savedOpacity = 0;
 		if (savedOpacity > 255) savedOpacity = 255;
@@ -266,6 +271,7 @@ public class GlassOpacityTuner
 		oldTintR = tintR;
 		oldTintG = tintG;
 		oldTintB = tintB;
+		oldAppearanceCustomized = appearanceCustomized;
 		if (privateTypeHandle && target.getRenderType() == privateTypeHandle.id())
 			tuningHadOverride = 1;
 		else
@@ -292,6 +298,7 @@ public class GlassOpacityTuner
 			if (applyAppearance(target, alphaFromPercent(requested), tintR, tintG, tintB))
 			{
 				opacity = alphaFromPercent(requested);
+				appearanceCustomized = 1;
 				((Slider)m.gadget).setValue(requested);
 				((Slider)m.gadget).changeVLabelText(
 					Float.toString(requested, "   %1.0f%%") );
@@ -318,6 +325,7 @@ public class GlassOpacityTuner
 				tintR = red;
 				tintG = green;
 				tintB = blue;
+				appearanceCustomized = 1;
 			}
 		}
 	}
@@ -330,6 +338,7 @@ public class GlassOpacityTuner
 			tintR = oldTintR;
 			tintG = oldTintG;
 			tintB = oldTintB;
+			appearanceCustomized = oldAppearanceCustomized;
 
 			if (tuningHadOverride != 0)
 			{
