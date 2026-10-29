@@ -218,18 +218,13 @@ public class InventoryItem_Part extends InventoryItem
 	{
 		Part p = getPart();
 		logInventoryPreviewTrace( "ITEM-REFRESH-ENTER", p );
-		if( p instanceof Window )
+		if( p )
 		{
-			((Window)p).refreshGlassOpacityPreview();
-			logInventoryPreviewTrace( "WINDOW-REFRESH-RETURN", p );
+			// Use virtual dispatch instead of instanceof: the SLRR script runtime
+			// reports these loaded glass parts as neither Window nor Windshield here.
+			p.refreshGlassOpacityPreview();
+			logInventoryPreviewTrace( "PREVIEW-HOOK-RETURN", p );
 		}
-		else if( p instanceof Windshield )
-		{
-			((Windshield)p).refreshGlassOpacityPreview();
-			logInventoryPreviewTrace( "WINDSHIELD-REFRESH-RETURN", p );
-		}
-		else
-			logInventoryPreviewTrace( "ITEM-NOT-GLASS", p );
 	}
 
 	public void hide( InventoryPanel ip )
