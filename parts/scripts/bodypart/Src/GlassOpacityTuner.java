@@ -49,7 +49,6 @@ public class GlassOpacityTuner
 		saveGame.write( tintR );
 		saveGame.write( tintG );
 		saveGame.write( tintB );
-		; // Logging unavailable in this SLRR script API.
 	}
 
 	public void load( File saveGame, int version )
@@ -77,7 +76,6 @@ public class GlassOpacityTuner
 		oldTintR = tintR;
 		oldTintG = tintG;
 		oldTintB = tintB;
-		; // Logging unavailable in this SLRR script API.
 		hasOpacityOverride = 0;
 		if (savedOverride != 0)
 			restorePending = 1;
@@ -225,10 +223,7 @@ public class GlassOpacityTuner
 			if (applyAppearance(target, opacity, tintR, tintG, tintB))
 			{
 				restorePending = 0;
-				; // Logging unavailable in this SLRR script API.
 			}
-			else
-				; // Logging unavailable in this SLRR script API.
 		}
 	}
 
@@ -247,7 +242,6 @@ public class GlassOpacityTuner
 			{
 				restorePending = 0;
 				previewRetryLogged = 0;
-				; // Logging unavailable in this SLRR script API.
 			}
 			previewRefreshInProgress = 0;
 			return;
@@ -269,7 +263,6 @@ public class GlassOpacityTuner
 			target.setRenderType(privateTypeHandle.id());
 		else if (currentType != privateTypeHandle.id())
 		{
-			; // Logging unavailable in this SLRR script API.
 			previewRefreshInProgress = 0;
 			return;
 		}
@@ -279,7 +272,6 @@ public class GlassOpacityTuner
 		{
 			if (previewRetryLogged == 0)
 			{
-				; // Logging unavailable in this SLRR script API.
 				previewRetryLogged = 1;
 			}
 			previewRefreshInProgress = 0;
@@ -393,12 +385,10 @@ public class GlassOpacityTuner
 			{
 				if (previewRetryLogged == 0)
 				{
-					; // Logging unavailable in this SLRR script API.
 					previewRetryLogged = 1;
 				}
 				return 0;
 			}
-			; // Logging unavailable in this SLRR script API.
 			restoreOverride(target);
 			return 0;
 		}
@@ -422,7 +412,6 @@ public class GlassOpacityTuner
 				return 1;
 
 			// Do not silently overwrite a render-type change made by another system.
-			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
@@ -430,7 +419,6 @@ public class GlassOpacityTuner
 		int originalMeshID = target.getMesh();
 		if (originalRenderID == 0 || originalMeshID == 0)
 		{
-			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
@@ -442,7 +430,6 @@ public class GlassOpacityTuner
 
 		if (sourceType.type() != 14 || sourceMesh.type() != 5 || targetMesh.type() != 5)
 		{
-			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
@@ -454,7 +441,6 @@ public class GlassOpacityTuner
 		if (privateType.id() == 0 || privateType.type() != 14)
 		{
 			if (privateType.id() != 0) privateType.destroy();
-			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
@@ -471,7 +457,6 @@ public class GlassOpacityTuner
 
 		if (target.getRenderType() != privateType.id() || target.getMesh() != originalMeshID)
 		{
-			; // Logging unavailable in this SLRR script API.
 			restoreOverride(target);
 			return 0;
 		}
@@ -481,7 +466,6 @@ public class GlassOpacityTuner
 		{
 			if (previewRefreshInProgress != 0)
 				return 1; // Keep the temporary type/resources alive for the next preview refresh.
-			; // Logging unavailable in this SLRR script API.
 			restoreOverride(target);
 			return 0;
 		}
@@ -527,16 +511,13 @@ public class GlassOpacityTuner
 			target.setRenderType(originalRenderType);
 			if (target.getRenderType() != originalRenderType)
 			{
-				; // Logging unavailable in this SLRR script API.
 				return 0;
 			}
 
-			if (target.getMesh() != originalMesh)
-				; // Logging unavailable in this SLRR script API.
+
 		}
 		else if (target.getRenderType() != originalRenderType)
 		{
-			; // Logging unavailable in this SLRR script API.
 			return 0;
 		}
 
