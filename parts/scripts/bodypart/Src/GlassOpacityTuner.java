@@ -108,7 +108,6 @@ public class GlassOpacityTuner
 	void logPreviewState( Part target, String phase )
 	{
 		if (previewDebugLines >= 40 || previewLogLineCount >= 200) return;
-		if (target && appearanceCustomized == 0 && restorePending == 0 && hasOpacityOverride == 0 && phase != "PREVIEW-ENTRY") return;
 
 		int partID = 0;
 		int renderID = 0;
