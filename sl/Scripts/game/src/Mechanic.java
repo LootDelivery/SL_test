@@ -278,7 +278,7 @@ public class Mechanic extends GameType
 							dlg.osd.globalHandler = part;
 							Menu m = dlg.osd.createMenu( butt1, 0.0, -0.5, 0, sld1, sldk );
 
-							part.buildTuningMenu( m, dlg.osd );
+							part.buildTuningMenu( m );
 							part.enterAsyncMode_Script();
 							dlg.osd.globalHandler = dlg;
 							int choice = dlg.display();	//0-ok, 1-cancel
