@@ -1,4 +1,4 @@
-// EXPERIMENTAL RUNTIME WINDshield OPACITY PROBE
+// EXPERIMENTAL RUNTIME WINDSHIELD OPACITY PROBE
 // TEST ONLY: back up the installed Painter.class/source before replacing it.
 // Makes a private copy of a render type known to use flags 640 (mode 1), replaces
 // its mesh with the selected part's mesh, and tries ARGB overrides on that part.
@@ -1837,13 +1837,18 @@ public class Painter extends GameType implements GameState
 			}
 
 			int color = 0xFF160D0D;
-			if (alphaTestStage == 1) color = 0x7F160D0D;
+			String colorHex = "FF160D0D";
+			if (alphaTestStage == 1)
+			{
+				color = 0x7F160D0D;
+				colorHex = "7F160D0D";
+			}
 			RenderRef active = new RenderRef(instanceID);
 			active.setColor(color);
 			alphaTestInstanceId = instanceID;
 			alphaTestStage++;
 			String msg = "Opacity probe: stage " + alphaTestStage
-				+ " setColor=0x" + Integer.toHexString(color)
+				+ " setColor=0x" + colorHex
 				+ " (ARGB alpha=" + ((color >>> 24) & 0xFF) + ").";
 			infoline.changeText(msg);
 			logRenderProbe(msg);
