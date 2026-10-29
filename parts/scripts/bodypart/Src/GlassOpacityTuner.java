@@ -56,8 +56,6 @@ public class GlassOpacityTuner
 	{
 		int savedOverride = saveGame.readInt();
 		int savedOpacity = saveGame.readInt();
-		appearanceCustomized = (savedOverride != 0) ? 1 : 0;
-		oldAppearanceCustomized = appearanceCustomized;
 
 		if (savedOpacity < 0) savedOpacity = 0;
 		if (savedOpacity > 255) savedOpacity = 255;
@@ -80,10 +78,14 @@ public class GlassOpacityTuner
 		oldTintG = tintG;
 		oldTintB = tintB;
 		hasOpacityOverride = 0;
-		if (savedOverride != 0)
-			restorePending = 1;
-		else
-			restorePending = 0;
+
+		// Older saves may contain the chosen values even if the transient
+		// render-type flag was lost before saving. Recover that customization.
+		appearanceCustomized = 0;
+		if (savedOverride != 0 || opacity != 127 || tintR != 22 || tintG != 13 || tintB != 13)
+			appearanceCustomized = 1;
+		oldAppearanceCustomized = appearanceCustomized;
+		restorePending = appearanceCustomized;
 		tuningHadOverride = 0;
 	}
 
