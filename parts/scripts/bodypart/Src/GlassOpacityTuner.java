@@ -50,7 +50,10 @@ public class GlassOpacityTuner
 		opacity = savedOpacity;
 		oldOpacity = savedOpacity;
 		hasOpacityOverride = 0;
-		restorePending = (savedOverride != 0) ? 1 : 0;
+		if (savedOverride != 0)
+			restorePending = 1;
+		else
+			restorePending = 0;
 		tuningHadOverride = 0;
 	}
 
