@@ -285,11 +285,6 @@ public class GlassOpacityTuner
 
 	public void buildTuningMenu( Menu m, Part target )
 	{
-		buildTuningMenu(m, target, null);
-	}
-
-	public void buildTuningMenu( Menu m, Part target, Osd tuningOsd )
-	{
 		oldOpacity = opacity;
 		oldTintR = tintR;
 		oldTintG = tintG;
@@ -299,57 +294,39 @@ public class GlassOpacityTuner
 			tuningHadOverride = 1;
 		else
 			tuningHadOverride = 0;
+		// Use the OSD that owns the tuning menu. This keeps the controls in the
+		// same window and avoids a second dialog or any changes to the caller.
+		Osd tuningOsd = m.osd;
 
 		int percent = snapPercentToFive(opacityPercent());
-		Slider opacitySlider;
-		if (tuningOsd)
-		{
-			Style sliderStyle = new Style(0.45, 0.06, Frontend.smallFont,
-				Text.ALIGN_CENTER, new ResourceRef(Osd.RID_SLD_BACK));
-			Style knobStyle = new Style(0.04, 0.05, Frontend.smallFont,
-				Text.ALIGN_RIGHT, new ResourceRef(Osd.RID_SLD_KNOB));
-			opacitySlider = tuningOsd.createSlider(sliderStyle, knobStyle,
-				0.0, 0.35, "Glass opacity", CMD_GLASS_OPACITY,
-				percent, 0.0, 100.0, 21);
-		}
-		else
-		{
-			opacitySlider = m.addItem( "Glass opacity", CMD_GLASS_OPACITY,
-				percent, 0.0, 100.0, 21, null );
-		}
+		Style sliderStyle = new Style(0.45, 0.06, Frontend.smallFont,
+			Text.ALIGN_CENTER, new ResourceRef(Osd.RID_SLD_BACK));
+		Style knobStyle = new Style(0.04, 0.05, Frontend.smallFont,
+			Text.ALIGN_RIGHT, new ResourceRef(Osd.RID_SLD_KNOB));
+		Slider opacitySlider = tuningOsd.createSlider(sliderStyle, knobStyle,
+			0.0, 0.35, "Glass opacity", CMD_GLASS_OPACITY,
+			percent, 0.0, 100.0, 21);
 		opacitySlider.changeVLabelText( Float.toString(percent, "   %1.0f%%") );
 
-		// Keep preset selection in this tuning menu. A second Dialog steals input
-		// from the parent and can make its OK/CANCEL buttons unreachable.
 		String[] tintNames = getTintNames();
 		int selectedTint = findTintPreset();
 		glassTintButtons = new Button[tintNames.length];
-		Menu leftChoices = null;
-		Menu rightChoices = null;
-		if (tuningOsd)
-		{
-			Style itemStyle = new Style(0.15, 0.075, Frontend.smallFont,
-				Text.ALIGN_LEFT, Osd.RRT_TEST);
-			leftChoices = tuningOsd.createMenu(itemStyle, -0.2, -0.30, 0, Osd.MD_VERTICAL);
-			rightChoices = tuningOsd.createMenu(itemStyle, 0.1, -0.30, 0, Osd.MD_VERTICAL);
-		}
+
+		// Two columns, retaining the coordinates and item size from the picker.
+		Style itemStyle = new Style(0.15, 0.075, Frontend.smallFont,
+			Text.ALIGN_LEFT, Osd.RRT_TEST);
+		Menu leftChoices = tuningOsd.createMenu(itemStyle, -0.2, -0.30, 0, Osd.MD_VERTICAL);
+		Menu rightChoices = tuningOsd.createMenu(itemStyle, 0.1, -0.30, 0, Osd.MD_VERTICAL);
+
 		for (int i = 0; i < tintNames.length; i++)
 		{
 			String label = tintNames[i];
 			if (selectedTint == i + 1)
 				label = "* " + label;
-			if (tuningOsd)
-			{
-				if (i < 8)
-					glassTintButtons[i] = leftChoices.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i);
-				else
-					glassTintButtons[i] = rightChoices.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i);
-			}
+			if (i < 8)
+				glassTintButtons[i] = leftChoices.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i);
 			else
-			{
-				glassTintButtons[i] = m.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i,
-					"Set glass color to " + tintNames[i]);
-			}
+				glassTintButtons[i] = rightChoices.addItem(label, CMD_GLASS_TINT_PRESET_BASE + i);
 		}
 	}
 
