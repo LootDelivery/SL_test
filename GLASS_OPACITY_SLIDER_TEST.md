@@ -7,7 +7,7 @@ This revision builds on the working version-4 persistence branch.
 ## Changes
 
 - **Opacity:** remains a 0–100% selector in 5% increments.
-- **Tint:** replaces the three RGB sliders with a named preset selector: Custom/current, Stock, Black, Charcoal, Gray, Silver, White, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, and Brown.
+- **Tint:** replaces the three RGB sliders with a named preset selector. Its event handler reads the selected index from `m.gadget.osd.sliderValue`; the list item is a `Gadget`, not a `Slider`, so no `Slider` cast is used: Custom/current, Stock, Black, Charcoal, Gray, Silver, White, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, and Brown.
 - **Persistence:** the RGB triplet is still written using the existing version-4 part payload. No further save-format bump is required.
 - **Inventory preview:** adds a refresh callback to `Window` and `Windshield`, and calls it from `InventoryItem_Part.show()` after the inventory preview camera and light are created. This reapplies the saved alpha/RGB to the preview's current live render instance.
 
