@@ -7,7 +7,7 @@ This revision builds on the working version-4 persistence branch.
 ## Changes
 
 - **Opacity:** 0–100% selector in 5% increments.
-- **Tint palette:** named presets: Custom/current, Stock, Black, Charcoal, Gray, Silver, White, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, Brown.
+- **Tint palette:** named presets are retained internally. To avoid a runtime cast on an unsupported selector gadget, this revision temporarily uses a `Next glass color` button that cycles through Stock, Black, Charcoal, Gray, Silver, White, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, and Brown.
 - **Persistence:** existing version-4 part payload stores alpha and RGB.
 - **Inventory preview:** helper methods exist on Window/Windshield, but no InventoryItem_Part replacement is included. The public source snapshot was incompatible with the user's installed version.
 
@@ -30,7 +30,7 @@ Do not replace the entire installed InventoryItem_Part.java with a different gam
 2. Compile the three part scripts and keep Part.java at version 4.
 3. Load a current save, verify car purchase and part removal.
 4. Change opacity and tint, save, fully exit, and reload.
-5. Test the palette selector, then test Cancel.
+5. Test `Next glass color` (each click advances one preset), then test Cancel.
 
 ## Limitations
 
