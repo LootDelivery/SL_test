@@ -1855,10 +1855,13 @@ public class Painter extends GameType implements GameState
 			RenderRef active = new RenderRef(instanceID);
 			active.setColor(color);
 			alphaTestInstanceId = instanceID;
-			alphaTestStage++;
-			String msg = "Opacity probe: stage " + alphaTestStage
-				+ " setColor=0x" + colorHex
-				+ " (ARGB alpha=" + ((color >>> 24) & 0xFF) + ").";
+			// Avoid postfix increment and bit-shift expressions in this diagnostic path:
+			// older SLRR VM builds can report a stack-access error for complex expressions.
+			if (alphaTestStage == 1)
+				alphaTestStage = 2;
+			else
+				alphaTestStage = 3;
+			String msg = "Opacity probe: applied setColor=0x" + colorHex + ".";
 			infoline.changeText(msg);
 			logRenderProbe(msg);
 			return;
