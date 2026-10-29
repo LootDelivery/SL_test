@@ -13,7 +13,7 @@ public class GlassTintDialog extends Dialog
 	String[] names;
 	int currentPreset;
 
-	Style itemStyle = new Style(0.56, 0.075, Frontend.smallFont,
+	Style itemStyle = new Style(0.45, 0.075, Frontend.smallFont,
 		Text.ALIGN_LEFT, Osd.RRT_TEST);
 
 	public GlassTintDialog( String[] options, int selectedPreset )
