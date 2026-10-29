@@ -40,6 +40,7 @@ public class GlassOpacityTuner
 	int originalMesh = 0;
 	int renderInstance = 0;
 	Button glassColorButton;
+	java.game.GlassTintPresetDialog activeTintPicker;
 
 	// Version-4 part payload: override marker, alpha, and RGB tint. Runtime handles are not saved.
 	public void save( File saveGame )
@@ -331,33 +332,45 @@ public class GlassOpacityTuner
 		}
 		else if (m.cmd == CMD_GLASS_TINT)
 		{
-			previous = findTintPreset();
-			java.game.GlassTintPresetDialog picker = new java.game.GlassTintPresetDialog(getTintNames(), previous);
-			requested = picker.display();
-
-			// The dialog returns preset IDs 1..15, or 0 when cancelled.
-			if (requested > 0)
+			// The picker is modeless, so do not block this tuning dialog's event loop.
+			if (!activeTintPicker)
 			{
-				requested = clampTintPreset(requested);
-				int red = tintRed(requested);
-				int green = tintGreen(requested);
-				int blue = tintBlue(requested);
-
-				if (applyAppearance(target, opacity, red, green, blue))
-				{
-					tintR = red;
-					tintG = green;
-					tintB = blue;
-					appearanceCustomized = 1;
-					if (glassColorButton)
-						glassColorButton.changeLabelText(getTintLabel());
-				}
+				previous = findTintPreset();
+				activeTintPicker = new java.game.GlassTintPresetDialog(getTintNames(), previous, this, target);
+				activeTintPicker.show();
 			}
 		}
 	}
 
+	public void selectTintPreset( Part target, int preset )
+	{
+		preset = clampTintPreset(preset);
+		int red = tintRed(preset);
+		int green = tintGreen(preset);
+		int blue = tintBlue(preset);
+
+		if (applyAppearance(target, opacity, red, green, blue))
+		{
+			tintR = red;
+			tintG = green;
+			tintB = blue;
+			appearanceCustomized = 1;
+			if (glassColorButton)
+				glassColorButton.changeLabelText(getTintLabel());
+		}
+	}
+
+	public void tintPickerClosed( java.game.GlassTintPresetDialog picker )
+	{
+		if (activeTintPicker == picker)
+			activeTintPicker = null;
+	}
+
 	public void endTuningSession( int cancelled, Part target )
 	{
+		// The picker must not outlive the tuning dialog.
+		if (activeTintPicker)
+			activeTintPicker.dismiss();
 		if (cancelled)
 		{
 			opacity = oldOpacity;
