@@ -3,6 +3,8 @@ package java.game.parts;
 import java.io.*;
 import java.util.*;
 import java.util.resource.*;
+import java.render.*;
+import java.render.osd.*;
 import java.game.parts.bodypart.*;
 import java.game.cars.*;
 
@@ -102,6 +104,12 @@ public class Part extends GameType
 	}
 
 	//no def tuning 
+	public void buildTuningMenu( Menu m, Osd tuningOsd )
+	{
+		// Default behavior for ordinary parts: preserve their original tuning menu.
+		buildTuningMenu( m );
+	}
+
 	public int isTuneable(){ return 0; }
 
 	//---------------------------------------------------------part load/save
