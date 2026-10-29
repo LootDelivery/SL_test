@@ -1,5 +1,6 @@
 package java.game.parts.bodypart;
 
+import java.io.*;
 import java.util.*;
 import java.util.resource.*;
 import java.render.*;
@@ -14,6 +15,7 @@ public class GlassOpacityTuner
 	// Runtime/session-only override. This does not extend the car-save format.
 	int opacity = 127;
 	int oldOpacity = 127;
+	int hasOpacityOverride = 0;
 	int tuningHadOverride = 0;
 
 	RenderRef sourceTypeHandle;
@@ -24,6 +26,37 @@ public class GlassOpacityTuner
 	int originalRenderType = 0;
 	int originalMesh = 0;
 	int renderInstance = 0;
+
+	// Versioned per-part payload. The global Part save version gates whether old
+	// save files contain this record at all.
+	public void save( File saveGame )
+	{
+		int save_ver = 1;
+		saveGame.write(save_ver);
+		if (save_ver >= 1)
+		{
+			saveGame.write(hasOpacityOverride);
+			saveGame.write(opacity);
+		}
+	}
+
+	public void load( File saveGame, Part target )
+	{
+		int save_ver = saveGame.readInt();
+		if (save_ver >= 1)
+		{
+			hasOpacityOverride = saveGame.readInt();
+			opacity = saveGame.readInt();
+			if (opacity < 0) opacity = 0;
+			if (opacity > 255) opacity = 255;
+
+			if (hasOpacityOverride != 0)
+			{
+				if (!applyOpacity(target, opacity))
+					System.print("Glass opacity: saved setting was read but could not be reapplied.");
+			}
+		}
+	}
 
 	public void buildTuningMenu( Menu m, Part target )
 	{
@@ -57,7 +90,7 @@ public class GlassOpacityTuner
 			else
 			{
 				((Slider)m.gadget).setValue(previousOpacity);
-				((Slider)m.gadget).changeVLabelText(
+					((Slider)m.gadget).changeVLabelText(
 					Float.toString(previousOpacity*100.0/255.0, "   %1.0f%%") );
 			}
 		}
@@ -107,6 +140,7 @@ public class GlassOpacityTuner
 		RenderRef active = new RenderRef(instanceID);
 		active.setColor(argb);
 		renderInstance = instanceID;
+		hasOpacityOverride = 1;
 		return 1;
 	}
 
@@ -242,6 +276,7 @@ public class GlassOpacityTuner
 		originalRenderType = 0;
 		originalMesh = 0;
 		renderInstance = 0;
+		hasOpacityOverride = 0;
 		return 1;
 	}
 }
