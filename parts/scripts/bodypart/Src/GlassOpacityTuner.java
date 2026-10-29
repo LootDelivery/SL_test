@@ -32,6 +32,7 @@ public class GlassOpacityTuner
 	// Keep the temporary render type alive until a child instance exists.
 	int previewRefreshInProgress = 0;
 	int previewDebugLines = 0;
+	int previewEntryLogged = 0;
 
 	// Diagnostic output uses the same SDAT writer as the working Painter probe.
 	// Static buffer keeps messages from different Window/Windshield instances.
@@ -98,6 +99,7 @@ public class GlassOpacityTuner
 		restorePending = appearanceCustomized;
 		tuningHadOverride = 0;
 		previewDebugLines = 0;
+		previewEntryLogged = 0;
 		logPreviewState(null, "LOAD");
 	}
 
@@ -106,7 +108,7 @@ public class GlassOpacityTuner
 	void logPreviewState( Part target, String phase )
 	{
 		if (previewDebugLines >= 40 || previewLogLineCount >= 200) return;
-		if (target && appearanceCustomized == 0 && restorePending == 0 && hasOpacityOverride == 0) return;
+		if (target && appearanceCustomized == 0 && restorePending == 0 && hasOpacityOverride == 0 && phase != "PREVIEW-ENTRY") return;
 
 		int partID = 0;
 		int renderID = 0;
@@ -316,7 +318,11 @@ public class GlassOpacityTuner
 	public void onInventoryPreview( Part target )
 	{
 		previewRefreshInProgress = 1;
-		logPreviewState(target, "PREVIEW-ENTRY");
+		if (previewEntryLogged == 0)
+		{
+			logPreviewState(target, "PREVIEW-ENTRY");
+			previewEntryLogged = 1;
+		}
 
 		if (restorePending != 0 || hasOpacityOverride == 0)
 		{
