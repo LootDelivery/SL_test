@@ -392,6 +392,11 @@ namespace
             }
             for (const auto& map : mesh.material.maps)
             {
+                if (map.textureIndex >= scene.texturePaths.size())
+                {
+                    error = prefix + "references a texture index outside the scene texture table.";
+                    return false;
+                }
                 if (!ValidateVec2(map.tiling) || !ValidateVec2(map.offset))
                 {
                     error = prefix + "contains a non-finite material map transform.";
