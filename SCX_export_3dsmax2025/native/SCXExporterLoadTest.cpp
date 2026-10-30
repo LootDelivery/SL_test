@@ -1,10 +1,11 @@
 #include <max.h>
+#include <iparamb2.h>
 #include <impexp.h>
 
 namespace
 {
     // A dedicated ID for this temporary load-test exporter.
-    constexpr Class_ID kScxExporterLoadTestClassId(0x5B7C19A3, 0x3E6D48F1);
+    const Class_ID kScxExporterLoadTestClassId(0x5B7C19A3, 0x3E6D48F1);
 
     HINSTANCE g_moduleInstance = nullptr;
 
