@@ -64,4 +64,4 @@
 - A standalone SCX v3/v4 inspector and synthetic unit tests are in [tools/](tools/) and [tests/](tests/). A structural check of the two repository windshield fixtures passed: each is SCX v4 with eight records, two material blocks, two vertex blocks (38 vertices each) and two face blocks (50 triangles each).
 - The native build prerequisites and the exact local information needed next are in [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md).
 
-The native x64 load test succeeds in 3ds Max 2025. The first format-independent SCX v4 scene model and serializer are now in [native/](native/README.md); they are not yet wired to Max scene extraction and have not been validated in SLRR. The temporary `.scxprobe` plug-in entry remains a loader test.
+The native x64 plug-in now has an initial SCX v4 geometry path: Max scene extraction, material splits, corner normals, UV1–UV3, and a bounded v4 serializer. It is experimental and not yet validated in SLRR; V3, external textures, Physics, skinning, Animation, Pivot, Groups, and Solidify compatibility remain in the porting scope.
