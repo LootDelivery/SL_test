@@ -54,3 +54,14 @@
 - `../SCX_export_3dsmax5/` — исходные старые бинарники, только для анализа.
 - `../F_windshield.scx` и `../F_windshield_edited.scx` — две контрольные модели.
 - [SCX v3/v4 reader and ImHex pattern](https://github.com/nonamesex/io_invo_scx).
+
+
+## Current progress
+
+- Legacy PE32 modules inspected: compiler/linker era, imported Max SDK APIs, resource strings and export dialogs.
+- The original option labels are documented in [LEGACY_PLUGIN_UI.md](LEGACY_PLUGIN_UI.md).
+- The full migration scope is tracked in [FEATURE_MATRIX.md](FEATURE_MATRIX.md).
+- A standalone SCX v3/v4 inspector and synthetic unit tests are in [tools/](tools/) and [tests/](tests/). A structural check of the two repository windshield fixtures passed: each is SCX v4 with eight records, two material blocks, two vertex blocks (38 vertices each) and two face blocks (50 triangles each).
+- The native build prerequisites and the exact local information needed next are in [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md).
+
+The next implementation milestone is a minimal native 64-bit SceneExport plug-in that registers in 3ds Max 2025. It will not write model data yet; this first load test separates SDK/toolchain setup from SCX serialization.
