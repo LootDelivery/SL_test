@@ -64,4 +64,4 @@
 - A standalone SCX v3/v4 inspector and synthetic unit tests are in [tools/](tools/) and [tests/](tests/). A structural check of the two repository windshield fixtures passed: each is SCX v4 with eight records, two material blocks, two vertex blocks (38 vertices each) and two face blocks (50 triangles each).
 - The native build prerequisites and the exact local information needed next are in [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md).
 
-The next implementation milestone is a minimal native 64-bit SceneExport plug-in that registers in 3ds Max 2025. The initial Visual Studio solution is in [native/](native/README.md). It exposes a temporary `.scxprobe` file filter and deliberately does not write model data; this first load test separates SDK/toolchain setup from SCX serialization.
+The native x64 load test succeeds in 3ds Max 2025. The first format-independent SCX v4 scene model and serializer are now in [native/](native/README.md); they are not yet wired to Max scene extraction and have not been validated in SLRR. The temporary `.scxprobe` plug-in entry remains a loader test.
