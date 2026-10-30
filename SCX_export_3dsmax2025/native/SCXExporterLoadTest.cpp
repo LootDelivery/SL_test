@@ -13,7 +13,7 @@
 
 namespace
 {
-    // A dedicated ID for this temporary load-test exporter.
+    // Dedicated class ID for the SLRR SCX v4 exporter prototype.
     const Class_ID kScxExporterLoadTestClassId(0x5B7C19A3, 0x3E6D48F1);
 
     HINSTANCE g_moduleInstance = nullptr;
@@ -75,7 +75,7 @@ namespace
 
         void ShowAbout(HWND) override
         {
-            // No UI is needed for the registration test.
+            // The prototype has no settings dialog yet.
         }
 
         int DoExport(
@@ -87,7 +87,7 @@ namespace
         {
             const auto reportError = [suppressPrompts](const std::string& message)
             {
-                OutputDebugStringA(("SLRR SCX exporter: " + message + "\\n").c_str());
+                OutputDebugStringA(("SLRR SCX exporter: " + message + "\n").c_str());
                 if (!suppressPrompts)
                 {
                     MessageBoxA(
