@@ -33,7 +33,7 @@ namespace
             std::ofstream log(logPath, std::ios::binary | std::ios::app);
             if (log)
             {
-                log << message << "\\n";
+                log << message << "\n";
             }
         }
         catch (...)
