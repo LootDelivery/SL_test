@@ -107,6 +107,11 @@ namespace
             return _M("SCX Tools");
         }
 
+        const MCHAR* NonLocalizedClassName() override
+        {
+            return _M("SCX Exporter Load Test");
+        }
+
         const MCHAR* InternalName() override
         {
             return _M("SCXExporterLoadTest");
