@@ -13,8 +13,9 @@ It is exposed in the 3ds Max Export and Export Selected workflows as **SLRR SCX 
 - Converts Max Z-up coordinates to the SCX coordinate basis.
 - Writes positions in centimetres; the known independent reader converts these to metres by dividing by 100.
 - Splits faces by material ID and creates separate SCX mesh records.
-- Duplicates vertices per face corner to preserve render-normal and UV seams.
-- Reads render normals and mapping channels 1–3.
+- Duplicates vertices per face corner to preserve UV seams.
+- Reads UV mapping channels 1–3 when map-face and map-vertex arrays are present.
+- Currently emits flat geometric face normals as a temporary crash-isolation measure; smoothing-group normals are not yet enabled.
 - Reads basic material data: name, diffuse and specular colors, transparency, self-illumination color and specular strength.
 - Splits generated meshes before the 16-bit SCX v4 vertex-index limit.
 - Writes the SCX v4 header table and record blocks with bounds checks.
@@ -32,6 +33,17 @@ It is exposed in the 3ds Max Export and Export Selected workflows as **SLRR SCX 
 - The original exporter option dialogs and defaults.
 
 These are still in the porting scope. The current v4 output is a first geometry prototype, not a claim of full legacy compatibility.
+
+## Crash-isolation build
+
+The first Export Selected test crashed in `mesh.dll` with an access violation. The exact failing call is not yet proven because the GitHub-hosted minidump is binary and could not be decoded by the repository connector.
+
+The current diagnostic build:
+- avoids `Mesh::ComputeRenderNormal` and calculates a temporary flat geometric normal from transformed triangle positions;
+- verifies map-face and map-vertex counts before reading UV arrays;
+- writes stage markers to `%TEMP%\\SCXExporter_trace.log`, including evaluated-object conversion, mesh counts, face progress and serialization stages.
+
+This is a temporary diagnostic configuration, not the final normal/smoothing implementation. Do not use its flat-shaded output as a production export.
 
 ## Important format assumptions still requiring reference exports
 
