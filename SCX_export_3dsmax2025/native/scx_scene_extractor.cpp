@@ -4,7 +4,6 @@
 #include <triobj.h>
 #include <units.h>
 #include <stdmat.h>
-#include <bmtex.h>
 
 #include <algorithm>
 #include <cmath>
