@@ -33,7 +33,7 @@ This matrix distinguishes verified clues from features that still require contro
 | Hard-surface / physical mesh | V4 entry type exists in the format reference; exporter behavior needs verification |
 | Bump-map normal / other extended attributes | Present in the v4 format pattern; importer support is incomplete, exporter support TBD |
 | Transforms, pivots, scale, hierarchy | V4 imports transform/decomposition APIs; exact exported coordinate conventions need tests |
-| Groups exporter options | TBD from legacy plugin UI/resources and a reference export |
+| Groups exporter options | Recovered UI: Group Export dialog, Frame # edit/spinner, Static Output group; output extension is .txt. The meaning and text grammar still need reference exports. |
 | Solidify modifier behavior | Separate modifier module; evaluate only after exporter baseline |
 
 ## Reference implementation caveat
@@ -58,3 +58,12 @@ The repository's `F_windshield.scx` and `F_windshield_edited.scx` are useful bin
 Autodesk's SDK requirements specify 3ds Max 2025 SDK, Visual Studio 2022 17.8.3, C++ Platform Toolset v143 and Windows Platform SDK 10.0.19041.0. Autodesk distributes the Max SDK separately from the main application. Before the first local build, check which of these components are installed; do not reinstall or change the user's working environment unnecessarily.
 
 The user has Visual Studio 2022 installed but does not work with it. Build setup and each test will therefore be given as explicit, step-by-step actions, without assuming prior C++ or Visual Studio knowledge.
+
+
+## Recovered export options
+
+- V3 UI: TNL optimized skinning, Physics, Strip, Animation, Pivot, Seperate.
+- V4 UI: Physics, Animation, Pivot, Seperate.
+- Groups UI: Frame # numeric edit/spinner and Static Output group; the plugin is a text exporter (.txt), not an SCX exporter.
+
+Resource evidence and control IDs are recorded in [LEGACY_PLUGIN_UI.md](LEGACY_PLUGIN_UI.md). These labels establish the presence of options, not their semantics. Defaults and behavior must be confirmed against the original plug-ins before implementation.
