@@ -56,8 +56,8 @@ namespace scx
 
     struct Vertex
     {
-        // Positions are stored in SCX file coordinates (centimetres * 100).
-        // Coordinate-system conversion belongs to the Max scene extractor.
+        // Positions are stored in centimetres. The reader converts them to metres
+        // by dividing the file values by 100.
         Vec3 position;
         Vec3 normal;
 
