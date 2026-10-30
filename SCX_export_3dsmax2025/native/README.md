@@ -24,7 +24,7 @@ The project expects these SDK locations:
 
 - Headers: `$(MaxSDK)\include`
 - x64 Release libraries: `$(MaxSDK)\lib\x64\Release`
-- Libraries linked by this minimal probe: `core.lib` and `maxutil.lib`
+- Libraries linked by this minimal probe: `core.lib`, `maxutil.lib` and `paramblk2.lib`
 
 The project targets x64, toolset v143, Unicode and the Windows SDK 10.0.19041.0.
 
