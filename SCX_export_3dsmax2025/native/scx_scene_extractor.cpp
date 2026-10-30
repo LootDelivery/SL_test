@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cctype>
 #include <cstdint>
 #include <filesystem>
@@ -266,6 +267,38 @@ namespace
         if (material->ClassID() == Class_ID(DMTL_CLASS_ID, 0))
         {
             StdMat2* standardMaterial = static_cast<StdMat2*>(material);
+
+            // In the v4 fixtures this SCX material-header scalar matches the
+            // Standard Material transparency-mode enum (0, 1, 2).
+            const int transparencyType = standardMaterial->GetTransparencyType();
+            if (transparencyType >= TRANSP_SUBTRACTIVE &&
+                transparencyType <= TRANSP_FILTER)
+            {
+                result.transparencyType = static_cast<std::uint32_t>(transparencyType);
+            }
+            else
+            {
+                TraceExtraction(
+                    "Material '" + result.name +
+                    "': unknown Standard Material transparency mode " +
+                    std::to_string(transparencyType) + "; using subtractive");
+            }
+
+            const float reflectionAmount =
+                standardMaterial->GetTexmapAmt(ID_RL, time);
+            if (standardMaterial->GetMapState(ID_RL) == 2 &&
+                std::isfinite(reflectionAmount) && reflectionAmount > 0.0f)
+            {
+                result.reflectionIntensity = reflectionAmount;
+            }
+
+            const float bumpAmount =
+                standardMaterial->GetTexmapAmt(ID_BU, time);
+            if (standardMaterial->GetMapState(ID_BU) == 2 &&
+                std::isfinite(bumpAmount) && bumpAmount > 0.0f)
+            {
+                result.bumpIntensity = bumpAmount;
+            }
 
             // The reference SCX files establish these slot-to-entry mappings:
             // Diffuse -> DiffuseMap, Ambient -> DiffuseMixSecond,
