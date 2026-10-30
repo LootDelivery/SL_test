@@ -165,7 +165,7 @@ namespace
     }
 
     scx::Vertex ExtractCorner(
-        const Mesh& mesh,
+        Mesh& mesh,
         int faceIndex,
         int corner,
         const Matrix3& objectTM,
@@ -229,11 +229,11 @@ namespace
         }
 
         const bool deleteTriObject = triObject != evaluatedObject;
-        const Mesh& mesh = triObject->GetMesh();
+        Mesh& mesh = triObject->GetMesh();
 
         if (mesh.getNumFaces() == 0)
         {
-            if (deleteTriObject) triObject->DeleteMe();
+            if (deleteTriObject) triObject->DeleteThis();
             return;
         }
 
