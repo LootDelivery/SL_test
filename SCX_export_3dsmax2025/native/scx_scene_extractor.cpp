@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <string>
 #include <vector>
@@ -14,6 +16,33 @@
 namespace
 {
     constexpr std::size_t kMaxV4VerticesPerMesh = 65536;
+
+    void TraceExtraction(const std::string& message)
+    {
+        wchar_t tempPath[MAX_PATH] = {};
+        const DWORD length = GetTempPathW(MAX_PATH, tempPath);
+        if (length == 0 || length >= MAX_PATH)
+        {
+            return;
+        }
+
+        try
+        {
+            std::filesystem::path logPath(tempPath);
+            logPath /= L"SCXExporter_trace.log";
+            std::ofstream log(logPath, std::ios::binary | std::ios::app);
+            if (log)
+            {
+                log << message << "\\n";
+            }
+        }
+        catch (...)
+        {
+            // Diagnostics must never interfere with the exporter itself.
+        }
+    }
+
+
 
     std::string ToUtf8(const MCHAR* text)
     {
@@ -233,18 +262,32 @@ namespace
             return;
         }
 
+        const std::string nodeName = ToUtf8(node->GetName());
+        TraceExtraction("Node '" + nodeName + "': begin EvalWorldState");
+
         ObjectState objectState = node->EvalWorldState(time);
         Object* evaluatedObject = objectState.obj;
-        if (evaluatedObject == nullptr ||
-            !evaluatedObject->CanConvertToType(Class_ID(TRIOBJ_CLASS_ID, 0)))
+        TraceExtraction("Node '" + nodeName + "': EvalWorldState returned");
+        if (evaluatedObject == nullptr)
         {
+            TraceExtraction("Node '" + nodeName + "': evaluated object is null; skipped");
             return;
         }
 
+        if (!evaluatedObject->CanConvertToType(Class_ID(TRIOBJ_CLASS_ID, 0)))
+        {
+            TraceExtraction("Node '" + nodeName + "': cannot convert to TriObject; skipped");
+            return;
+        }
+
+        TraceExtraction("Node '" + nodeName + "': CanConvertToType succeeded");
+
         const Matrix3 objectTM = node->GetObjTMAfterWSM(time);
 
+        TraceExtraction("Node '" + nodeName + "': begin ConvertToType");
         TriObject* triObject = static_cast<TriObject*>(
             evaluatedObject->ConvertToType(time, Class_ID(TRIOBJ_CLASS_ID, 0)));
+        TraceExtraction("Node '" + nodeName + "': ConvertToType returned");
         if (triObject == nullptr)
         {
             error = "Could not convert node '" + ToUtf8(node->GetName()) + "' to a triangular mesh.";
@@ -260,8 +303,11 @@ namespace
             return;
         }
 
-        const std::string nodeName = ToUtf8(node->GetName());
         Mtl* nodeMaterial = node->GetMtl();
+        TraceExtraction(
+            "Node '" + nodeName + "': mesh acquired; vertices=" +
+            std::to_string(mesh.getNumVerts()) + ", faces=" +
+            std::to_string(mesh.getNumFaces()));
 
         struct MaterialBucket
         {
@@ -273,8 +319,16 @@ namespace
 
         std::map<MtlID, MaterialBucket> buckets;
 
-        for (int faceIndex = 0; faceIndex < mesh.getNumFaces(); ++faceIndex)
+        const int faceCount = mesh.getNumFaces();
+        for (int faceIndex = 0; faceIndex < faceCount; ++faceIndex)
         {
+            if (faceIndex == 0 || (faceIndex + 1) % 100 == 0)
+            {
+                TraceExtraction(
+                    "Node '" + nodeName + "': processing face " +
+                    std::to_string(faceIndex + 1) + "/" + std::to_string(faceCount));
+            }
+
             const MtlID materialId = mesh.getFaceMtlIndex(faceIndex);
             MaterialBucket& bucket = buckets[materialId];
 
@@ -321,6 +375,8 @@ namespace
             triObject->DeleteThis();
         }
 
+        TraceExtraction("Node '" + nodeName + "': geometry loop completed");
+
         for (auto& pair : buckets)
         {
             MaterialBucket& bucket = pair.second;
@@ -363,6 +419,7 @@ namespace scx
     {
         output.meshes.clear();
         error.clear();
+        TraceExtraction(selectedOnly ? "Extraction: selected-only started" : "Extraction: full-scene started");
 
         const double centimetresPerSystemUnit = GetSystemUnitScale(UNITS_CENTIMETERS);
         if (!std::isfinite(centimetresPerSystemUnit) || centimetresPerSystemUnit <= 0.0)
@@ -404,6 +461,8 @@ namespace scx
                 return false;
             }
         }
+
+        TraceExtraction("Extraction: completed; exported mesh chunks=" + std::to_string(output.meshes.size()));
 
         if (output.meshes.empty())
         {
