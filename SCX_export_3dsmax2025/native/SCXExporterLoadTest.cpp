@@ -7,6 +7,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <exception>
 #include <limits>
 #include <string>
 #include <vector>
