@@ -1,78 +1,82 @@
-# Native 3ds Max 2025 exporter — current prototype
+# Native 3ds Max 2025 SCX exporter prototype
 
-This folder contains the first native x64 plug-in project for 3ds Max 2025.
+## Current state
 
-## Current prototype
+The native x64 plug-in has moved beyond the loader test. It now contains an experimental path from the evaluated 3ds Max scene to an SCX v4 file.
 
-The native plug-in now extracts evaluated triangular meshes from 3ds Max and writes an initial SCX v4 file. It appears as **SLRR SCX v4 Exporter** with the `.scx` extension.
+It is exposed in the 3ds Max Export and Export Selected workflows as **SLRR SCX v4 Exporter** (.scx).
 
-The implementation currently covers:
-- evaluated triangle meshes and world-space transforms;
-- splitting faces into separate material meshes;
-- per-corner render normals (vertices are duplicated at face corners to preserve normal/UV seams);
-- UV channels 1–3 when present;
-- material name, diffuse/specular color, basic transparency, self-illumination color and specular strength;
-- bounded SCX v4 serialization and 16-bit index validation;
-- selected-node extraction through `SCENE_EXPORT_SELECTED`.
+### Implemented in this prototype
 
-It does **not** yet export external texture indices/maps, vertex colors, skin weights, bone references, hard-surface semantics, animation, pivots or the V3 format. Material header defaults are based on the two repository fixtures, not yet proven by a controlled legacy export.
+- Reads evaluated scene objects that can be converted to triangular meshes.
+- Bakes object transforms into exported positions.
+- Converts Max Z-up coordinates to the SCX coordinate basis.
+- Writes positions in centimetres; the known independent reader converts these to metres by dividing by 100.
+- Splits faces by material ID and creates separate SCX mesh records.
+- Duplicates vertices per face corner to preserve render-normal and UV seams.
+- Reads render normals and mapping channels 1–3.
+- Reads basic material data: name, diffuse and specular colors, transparency, self-illumination color and specular strength.
+- Splits generated meshes before the 16-bit SCX v4 vertex-index limit.
+- Writes the SCX v4 header table and record blocks with bounds checks.
+- Honors the SCENE_EXPORT_SELECTED option.
 
-This is an experimental first geometry path, not a claim of full SLRR compatibility. Validate the generated file with the included inspector and in SLRR before using it in production.
+### Not implemented yet
 
+- SCX v3 serialization.
+- SLRR external texture-index lookup and complete material-map extraction.
+- Vertex-color and emissive-vertex extraction from Max mesh data.
+- Skin weights, bone references and bone-index lists.
+- Verified hard-surface / Physics semantics.
+- Animation, pivot options and TNL optimized skinning.
+- Legacy Groups .txt export and the separate Solidify modifier.
+- The original exporter option dialogs and defaults.
 
-This is intentional. We are separating SDK/toolchain/load problems from the later SCX writer implementation.
+These are still in the porting scope. The current v4 output is a first geometry prototype, not a claim of full legacy compatibility.
 
-## SDK path configured
+## Important format assumptions still requiring reference exports
 
-The project currently uses the SDK path confirmed by the user:
+The two repository windshield fixtures use material-header values 0x33 and 2.0, and a hard-surface payload of 0. The prototype preserves these observed values as defaults, but their full meaning is not established. They must be compared against controlled files exported by the original Invictus V4 plugin before being treated as confirmed format rules.
 
-`C:\Program Files\Autodesk\3ds Max 2025 SDK\maxsdk`
+Coordinate-system conversion and position units also need validation against a known model with measured dimensions. The current conversion follows the independent reader's /100 position conversion and its [x, -z, y] axis mapping.
 
-The project expects these SDK locations:
+## SDK and build configuration
 
-- Headers: `$(MaxSDK)\include`
-- x64 Release libraries: `$(MaxSDK)\lib\x64\Release`
-- Libraries linked by the current prototype: `core.lib`, `geom.lib`, `maxutil.lib` and `paramblk2.lib`
+Confirmed SDK root:
 
-The project targets x64, toolset v143, Unicode and the Windows SDK 10.0.19041.0.
+C:\Program Files\Autodesk\3ds Max 2025 SDK\maxsdk
 
-## Open and build
+The Visual Studio project targets:
 
-1. Open `SCXExporterLoadTest.sln` in Visual Studio 2022.
-2. In the top toolbar select **Release** and **x64**.
-3. Use **Build → Build Solution**.
-4. The expected output is:
+- 3ds Max 2025 x64
+- Visual Studio 2022 / MSVC v143
+- Windows SDK 10.0.19041.0
+- C++17
+- Unicode
 
-   `native\bin\x64\Release\SCXExporterLoadTest.dle`
+Include path: $(MaxSDK)\include
 
-The output and intermediate folders are local build artifacts and should not be committed.
+Library path: $(MaxSDK)\lib\x64\Release
 
-## Loading into 3ds Max
+The project links core.lib, geom.lib, maxutil.lib and paramblk2.lib.
 
-After a successful build, add the generated `bin\x64\Release` folder as an additional plug-in search path in 3ds Max, or load the `.dle` through the Plug-in Manager. Then inspect the export-format list for **SLRR SCX v4 Exporter**.
+## Build
 
-Do not replace any existing exporter or copy this test plug-in over the old binaries.
+1. Open SCXExporterLoadTest.sln in Visual Studio 2022.
+2. Select Debug or Release, and x64.
+3. Choose Build → Rebuild Solution.
+4. The output is native\bin\x64\<Configuration>\SCXExporterLoadTest.dle.
 
-## Current format core
+Local bin, obj and .vs folders are ignored by Git.
 
-The project now includes a format-independent SCX scene model (`scx_scene.h`) and a first SCX v4 serializer (`scx_v4_writer.cpp` / `scx_v4_writer.h`).
+## First validation procedure
 
-The writer emits the currently understood v4 record sequence for each material mesh:
+1. Export a simple test mesh from Max using the new .scx filter.
+2. Run the repository's Python SCX inspector over the resulting file.
+3. Inspect material and vertex block counts, positions, normals, UV channels and indices.
+4. Compare against a controlled export from the legacy Invictus V4 plugin and then load in SLRR.
 
-1. Material definition (type 0)
-2. Hard-surface record (type 1)
-3. Vertex channel block (type 4)
-4. 16-bit triangle index block (type 5)
+A file passing the structural inspector is not automatically game-compatible. Do not overwrite original game assets with prototype output.
 
-It validates finite vertex data, triangle-index ranges, per-mesh 16-bit vertex addressing and file-offset bounds before serialization. It supports positions, normals, vertex color, emissive, UV1–UV3, bump normals, material color entries and material map records.
+## Next work
 
-Important limitations, explicitly retained rather than guessed:
-
-- The material header values 0x33 and 2.0, and the hard-surface payload 0, are defaults observed in the repository's windshield fixtures. Their complete semantics are not established yet.
-- The writer has not yet been checked against a controlled export from the old Invictus exporter or loaded in SLRR.
-- The writer is not yet connected to Max scene extraction. `DoExport` remains a deliberate registration-test stub until the extraction pipeline is ready.
-- SCX v3 uses a different sequential record layout and will get a separate serializer.
-
-## Next milestone
-
-Connect 3ds Max evaluated mesh data to the shared scene model, preserving material splits, face-corner normals and mapping channels. Then wire `WriteV4` into the export plug-in after validation with fixture-based round-trip tests.
+Validate the first geometry file, then recover external texture mapping and material semantics. After that add the SCX v3 writer and continue through skinning, Physics, animation, pivot, TNL optimization, Groups and Solidify compatibility.
