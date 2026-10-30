@@ -27,9 +27,9 @@ namespace
     constexpr std::uint32_t kMaterialDiffuseColor = 0x00000000;
     constexpr std::uint32_t kMaterialSpecularColor = 0x00000001;
     constexpr std::uint32_t kMaterialEmissiveColor = 0x00000002;
-    constexpr std::uint32_t kMaterialSpecularIntensity = 0x01000000;
-    constexpr std::uint32_t kMaterialReflectionIntensity = 0x01000001;
-    constexpr std::uint32_t kMaterialBumpIntensity = 0x01000002;
+    constexpr std::uint32_t kMaterialDiffuseIntensity = 0x01000000;
+    constexpr std::uint32_t kMaterialSpecularIntensity = 0x01000001;
+    constexpr std::uint32_t kMaterialEmissiveIntensity = 0x01000002;
     constexpr std::uint32_t kMaterialName = 0x08000000;
 
     // The material flags are still fixture-derived and not fully decoded.
@@ -123,9 +123,9 @@ namespace
 
         if (material.specular) ++entryCount;
         if (material.emissive) ++entryCount;
+        if (material.diffuseIntensity) ++entryCount;
         if (material.specularIntensity) ++entryCount;
-        if (material.reflectionIntensity) ++entryCount;
-        if (material.bumpIntensity) ++entryCount;
+        if (material.emissiveIntensity) ++entryCount;
         entryCount += static_cast<std::uint32_t>(material.maps.size());
 
         PutU32(payload, kObservedMaterialFlags);
@@ -150,22 +150,22 @@ namespace
             PutColor(payload, *material.emissive);
         }
 
+        if (material.diffuseIntensity)
+        {
+            PutU32(payload, kMaterialDiffuseIntensity);
+            PutF32(payload, *material.diffuseIntensity);
+        }
+
         if (material.specularIntensity)
         {
             PutU32(payload, kMaterialSpecularIntensity);
             PutF32(payload, *material.specularIntensity);
         }
 
-        if (material.reflectionIntensity)
+        if (material.emissiveIntensity)
         {
-            PutU32(payload, kMaterialReflectionIntensity);
-            PutF32(payload, *material.reflectionIntensity);
-        }
-
-        if (material.bumpIntensity)
-        {
-            PutU32(payload, kMaterialBumpIntensity);
-            PutF32(payload, *material.bumpIntensity);
+            PutU32(payload, kMaterialEmissiveIntensity);
+            PutF32(payload, *material.emissiveIntensity);
         }
 
         for (const auto& map : material.maps)
@@ -407,9 +407,9 @@ namespace
                 return false;
             }
 
-            if ((mesh.material.specularIntensity && !IsFinite(*mesh.material.specularIntensity)) ||
-                (mesh.material.reflectionIntensity && !IsFinite(*mesh.material.reflectionIntensity)) ||
-                (mesh.material.bumpIntensity && !IsFinite(*mesh.material.bumpIntensity)))
+            if ((mesh.material.diffuseIntensity && !IsFinite(*mesh.material.diffuseIntensity)) ||
+                (mesh.material.specularIntensity && !IsFinite(*mesh.material.specularIntensity)) ||
+                (mesh.material.emissiveIntensity && !IsFinite(*mesh.material.emissiveIntensity)))
             {
                 error = prefix + "contains a non-finite material intensity.";
                 return false;
