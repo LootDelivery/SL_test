@@ -28,11 +28,15 @@ Do not uninstall Visual Studio or change its version yet. First inspect the curr
 
 If any component is missing, do not guess which similarly named component to select. Send a screenshot of the filtered component list first; we can identify the exact item. The installer can retain multiple toolsets side by side, so a newer Visual Studio installation does not automatically mean it must be replaced.
 
-## Check the 3ds Max SDK
+## Confirmed 3ds Max SDK installation
 
-The SDK must match the installed 3ds Max release: **2025**, not 2024, 2026 or 2027.
+The user confirmed that the SDK is installed and its headers, libraries, samples and additional directories are present.
 
-Download it from Autodesk's 3ds Max API page. Do not download third-party repacks. Once extracted/installed, note the SDK root folder. We will configure the project to use that exact path rather than assuming a default installation location.
+Confirmed SDK root:
+
+`C:\\Program Files\\Autodesk\\3ds Max 2025 SDK\\maxsdk`
+
+The native starter project in `native/` is configured to use this exact path. It expects headers under `include` and x64 Release libraries under `lib\\x64\\Release`.
 
 ## What we will build
 
@@ -40,12 +44,8 @@ The first native plug-in will be a small 64-bit SceneExport module that only reg
 
 This staged build is intentional: it isolates SDK/toolchain problems from file-format problems. The actual exporter features will be added after the loader test succeeds.
 
-## Information needed for the first local build
+## First local build
 
-Please provide:
+The user has confirmed installation of the required MSVC v143 toolset and Windows SDK 10.0.19041.0, and has supplied the SDK root path above. A minimal native x64 SceneExport registration project is now provided in `native/SCXExporterLoadTest.sln`.
 
-- A screenshot of Visual Studio Installer → Modify → Individual components with the search MSVC v143.
-- A screenshot of the same page with the search 10.0.19041.0.
-- The folder where the 3ds Max 2025 SDK is installed/extracted (after we confirm it exists).
-
-You do not need to create a Visual Studio project yourself. I will provide the project files and exact build steps.
+The first build is a registration-only probe. It intentionally does not write SCX data; see `native/README.md` for the purpose and expected output.
