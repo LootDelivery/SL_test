@@ -147,12 +147,26 @@ namespace
             return;
         }
 
-        Texmap* textureMap = material->GetSubTexmap(standardMapSlot);
+        // StdMat2 shader implementations may reorder their physical
+        // sub-texmap slots. Convert the standard material ID before calling
+        // GetSubTexmap; GetMapState above intentionally still uses standardMapSlot.
+        const int subTexmapIndex = standardMaterial->StdIDToChannel(standardMapSlot);
+        if (subTexmapIndex < 0 || subTexmapIndex >= standardMaterial->NumSubTexmaps())
+        {
+            TraceExtraction(
+                "Material '" + outputMaterial.name + "': standard map slot " +
+                std::to_string(standardMapSlot) + " resolved to invalid sub-texmap index " +
+                std::to_string(subTexmapIndex));
+            return;
+        }
+
+        Texmap* textureMap = standardMaterial->GetSubTexmap(subTexmapIndex);
         if (textureMap == nullptr)
         {
             TraceExtraction(
                 "Material '" + outputMaterial.name + "': active map slot " +
-                std::to_string(standardMapSlot) + " has no Texmap object");
+                std::to_string(standardMapSlot) + " (sub-texmap " +
+                std::to_string(subTexmapIndex) + ") has no Texmap object");
             return;
         }
 
