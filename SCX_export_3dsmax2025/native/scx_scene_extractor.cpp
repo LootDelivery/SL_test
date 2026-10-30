@@ -163,6 +163,11 @@ namespace
             return std::nullopt;
         }
 
+        if (faceIndex == 0)
+        {
+            TraceExtraction("UV channel " + std::to_string(channel) + ": requesting map arrays");
+        }
+
         const TVFace* faces = mesh.mapFaces(channel);
         const UVVert* vertices = mesh.mapVerts(channel);
         if (faces == nullptr || vertices == nullptr)
@@ -206,7 +211,15 @@ namespace
             return false;
         }
 
+        if (faceIndex == 0 && corner == 0)
+        {
+            TraceExtraction("First face corner: begin getFace");
+        }
         const Face& face = mesh.getFace(faceIndex);
+        if (faceIndex == 0 && corner == 0)
+        {
+            TraceExtraction("First face corner: getFace returned");
+        }
         Point3 worldPositions[3];
 
         for (int index = 0; index < 3; ++index)
@@ -295,19 +308,26 @@ namespace
         }
 
         const bool deleteTriObject = triObject != evaluatedObject;
+        TraceExtraction("Node '" + nodeName + "': begin GetMesh");
         Mesh& mesh = triObject->GetMesh();
+        TraceExtraction("Node '" + nodeName + "': GetMesh returned");
 
-        if (mesh.getNumFaces() == 0)
+        const int meshVertexCount = mesh.getNumVerts();
+        const int meshFaceCount = mesh.getNumFaces();
+        TraceExtraction(
+            "Node '" + nodeName + "': mesh counts read; vertices=" +
+            std::to_string(meshVertexCount) + ", faces=" +
+            std::to_string(meshFaceCount));
+
+        if (meshFaceCount == 0)
         {
             if (deleteTriObject) triObject->DeleteThis();
             return;
         }
 
+        TraceExtraction("Node '" + nodeName + "': begin GetMtl");
         Mtl* nodeMaterial = node->GetMtl();
-        TraceExtraction(
-            "Node '" + nodeName + "': mesh acquired; vertices=" +
-            std::to_string(mesh.getNumVerts()) + ", faces=" +
-            std::to_string(mesh.getNumFaces()));
+        TraceExtraction("Node '" + nodeName + "': GetMtl returned");
 
         struct MaterialBucket
         {
@@ -319,7 +339,7 @@ namespace
 
         std::map<MtlID, MaterialBucket> buckets;
 
-        const int faceCount = mesh.getNumFaces();
+        const int faceCount = meshFaceCount;
         for (int faceIndex = 0; faceIndex < faceCount; ++faceIndex)
         {
             if (faceIndex == 0 || (faceIndex + 1) % 100 == 0)
