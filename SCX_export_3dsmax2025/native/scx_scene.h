@@ -36,7 +36,7 @@ namespace scx
     {
         MaterialMapEntry entry = MaterialMapEntry::Diffuse;
         std::uint32_t textureIndex = 0;
-        std::uint32_t mapChannel = 1;
+        std::uint32_t mapChannel = 0;
         std::uint32_t tilingFlags = 3;
         Vec2 tiling{ 1.0f, 1.0f };
         Vec2 offset{ 0.0f, 0.0f };
@@ -87,5 +87,9 @@ namespace scx
     struct Scene
     {
         std::vector<Mesh> meshes;
+
+        // Unique bitmap paths, ordered by first use. Material textureIndex
+        // values refer to this table; the exporter writes it to a .tex sidecar.
+        std::vector<std::string> texturePaths;
     };
 }
