@@ -16,7 +16,10 @@ It is exposed in the 3ds Max Export and Export Selected workflows as **SLRR SCX 
 - Duplicates vertices per face corner to preserve UV seams.
 - Reads UV mapping channels 1–3 when map-face and map-vertex arrays are present.
 - Currently emits flat geometric face normals as a temporary crash-isolation measure; smoothing-group normals are not yet enabled.
-- Reads basic material data: name, diffuse and specular colors, transparency, self-illumination color and specular strength.
+- Reads basic Standard Material data: name, diffuse/specular colors, transparency, self-illumination color and specular strength.
+- Extracts direct BitmapTex maps from Standard Material Ambient, Diffuse, Bump, Reflection and Self-Illumination slots.
+- Deduplicates bitmap paths in first-use order and writes their indices into the SCX material map entries.
+- Writes a matching `.tex` sidecar in `index>>>>>path` form for modders; this file is informational and is not consumed by the game.
 - Splits generated meshes before the 16-bit SCX v4 vertex-index limit.
 - Writes the SCX v4 header table and record blocks with bounds checks.
 - Honors the SCENE_EXPORT_SELECTED option.
@@ -24,12 +27,13 @@ It is exposed in the 3ds Max Export and Export Selected workflows as **SLRR SCX 
 ### Not implemented yet
 
 - SCX v3 serialization.
-- SLRR external texture-index lookup and complete material-map extraction.
+- Non-BitmapTex, nested/composite and procedural Standard Material maps; only direct BitmapTex slots are currently handled.
 - Vertex-color and emissive-vertex extraction from Max mesh data.
 - Skin weights, bone references and bone-index lists.
 - Verified hard-surface / Physics semantics.
 - Animation, pivot options and TNL optimized skinning.
 - Legacy Groups .txt export and the separate Solidify modifier.
+- Generalized material-header flags and complete legacy blend/render-state behavior; the current material flags value is still a fixture-derived placeholder.
 - The original exporter option dialogs and defaults.
 
 These are still in the porting scope. The current v4 output is a first geometry prototype, not a claim of full legacy compatibility.
@@ -47,7 +51,7 @@ This is a temporary diagnostic configuration, not the final normal/smoothing imp
 
 ## Important format assumptions still requiring reference exports
 
-The two repository windshield fixtures use material-header values 0x33 and 2.0, and a hard-surface payload of 0. The prototype preserves these observed values as defaults, but their full meaning is not established. They must be compared against controlled files exported by the original Invictus V4 plugin before being treated as confirmed format rules.
+Material-header flags vary between the newly inspected FL_seat and F_bumper fixtures, so the current 0x33 flags value is still only a placeholder and must not be treated as universal. The following material-header scalar matches the 3ds Max Standard Material transparency type in the inspected files: 0 for ordinary materials and 2 for filter transparency; the exporter now reads this from Standard Material. The hard-surface payload is still emitted as 0.
 
 Coordinate-system conversion and position units also need validation against a known model with measured dimensions. The current conversion follows the independent reader's /100 position conversion and its [x, -z, y] axis mapping.
 
@@ -91,4 +95,4 @@ A file passing the structural inspector is not automatically game-compatible. Do
 
 ## Next work
 
-Validate the first geometry file, then recover external texture mapping and material semantics. After that add the SCX v3 writer and continue through skinning, Physics, animation, pivot, TNL optimization, Groups and Solidify compatibility.
+Build and test the new Standard Material map extraction in SLRR. In particular, verify diffuse/ambient texture slots, reflection environment maps, UV channel selection, tiling/offset, and whether the still-unresolved material flags affect rendering. Then recover the complete material-header flag rules before broadening support to nested maps. After that add the SCX v3 writer and continue through skinning, Physics, animation, pivot, TNL optimization, Groups and Solidify compatibility.

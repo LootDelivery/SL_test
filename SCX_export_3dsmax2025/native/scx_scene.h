@@ -36,7 +36,7 @@ namespace scx
     {
         MaterialMapEntry entry = MaterialMapEntry::Diffuse;
         std::uint32_t textureIndex = 0;
-        std::uint32_t mapChannel = 1;
+        std::uint32_t mapChannel = 0;
         std::uint32_t tilingFlags = 3;
         Vec2 tiling{ 1.0f, 1.0f };
         Vec2 offset{ 0.0f, 0.0f };
@@ -45,12 +45,16 @@ namespace scx
     struct Material
     {
         std::string name = "Default";
+        // Standard Material transparency mode: 0=subtractive, 1=additive, 2=filter.
+        std::uint32_t transparencyType = 0;
         Color8 diffuse{ 255, 255, 255, 255 };
         std::optional<Color8> specular;
         std::optional<Color8> emissive;
+        // SCX v4 intensity entries confirmed against FL_seat.scx/F_bumper.scx:
+        // 0x01000000 = diffuse, 0x01000001 = specular, 0x01000002 = emissive.
+        std::optional<float> diffuseIntensity;
         std::optional<float> specularIntensity;
-        std::optional<float> reflectionIntensity;
-        std::optional<float> bumpIntensity;
+        std::optional<float> emissiveIntensity;
         std::vector<MaterialMap> maps;
     };
 
@@ -87,5 +91,9 @@ namespace scx
     struct Scene
     {
         std::vector<Mesh> meshes;
+
+        // Unique bitmap paths, ordered by first use. Material textureIndex
+        // values refer to this table; the exporter writes it to a .tex sidecar.
+        std::vector<std::string> texturePaths;
     };
 }

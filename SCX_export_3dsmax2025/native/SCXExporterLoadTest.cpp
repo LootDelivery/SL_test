@@ -44,6 +44,48 @@ namespace
         }
     }
 
+    bool WriteTextureList(
+        const std::filesystem::path& scxPath,
+        const std::vector<std::string>& texturePaths,
+        std::string& error)
+    {
+        try
+        {
+            std::filesystem::path textureListPath = scxPath;
+            textureListPath.replace_extension(L".tex");
+
+            std::ofstream textureList(
+                textureListPath,
+                std::ios::binary | std::ios::trunc);
+            if (!textureList)
+            {
+                error = "Could not open the .tex texture list for writing.";
+                return false;
+            }
+
+            // The community SCX importer accepts entries in this form:
+            // <zero-based-index>>>>>path
+            for (std::size_t index = 0; index < texturePaths.size(); ++index)
+            {
+                textureList << index << ">>>>>" << texturePaths[index] << "\r\n";
+            }
+
+            textureList.close();
+            if (!textureList)
+            {
+                error = "An error occurred while writing the .tex texture list.";
+                return false;
+            }
+        }
+        catch (const std::exception& exception)
+        {
+            error = std::string(".tex texture list output failed: ") + exception.what();
+            return false;
+        }
+
+        return true;
+    }
+
     class ScxExporterLoadTest final : public SceneExport
     {
     public:
@@ -141,7 +183,10 @@ namespace
                 reportError(error);
                 return IMPEXP_FAIL;
             }
-            TraceExport("DoExport: ExtractMaxScene succeeded; chunks=" + std::to_string(scene.meshes.size()));
+            TraceExport(
+                "DoExport: ExtractMaxScene succeeded; chunks=" +
+                std::to_string(scene.meshes.size()) +
+                ", unique textures=" + std::to_string(scene.texturePaths.size()));
 
             std::vector<std::uint8_t> bytes;
             TraceExport("DoExport: begin WriteV4");
@@ -187,6 +232,19 @@ namespace
             {
                 reportError(std::string("File output failed: ") + exception.what());
                 return IMPEXP_FAIL;
+            }
+
+            std::string textureListError;
+            if (!WriteTextureList(std::filesystem::path(fileName), scene.texturePaths, textureListError))
+            {
+                // The .tex file is informational metadata for modders. It is
+                // not read by the game and must not invalidate a valid SCX export.
+                TraceExport("DoExport: SCX saved, but .tex metadata output failed: " + textureListError);
+            }
+            else
+            {
+                TraceExport("DoExport: .tex metadata written; textures=" +
+                    std::to_string(scene.texturePaths.size()));
             }
 
             TraceExport("DoExport: completed successfully");
