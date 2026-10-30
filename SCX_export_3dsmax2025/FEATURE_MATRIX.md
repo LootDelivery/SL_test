@@ -22,17 +22,17 @@ This matrix distinguishes verified clues from features that still require contro
 | Capability | Evidence / current status |
 |---|---|
 | SCX v3 output | Dedicated V3 exporter exists; exact output behavior to be tested |
-| SCX v4 output | Dedicated V4 exporter exists; independent reader confirms the INVO v4 header/table structure |
+| SCX v4 output | Experimental C++ v4 writer is connected to Max evaluated triangular meshes; includes material splits, corner normals, UV1–UV3 and base material properties. No legacy-export comparison or in-game validation yet. |
 | Group-aware export | Dedicated Groups exporter exists; semantics and output contract TBD |
-| Multiple meshes / material submeshes | SCX v3/v4 structures and reader show material/mesh blocks; exact Max-side selection/group behavior TBD |
+| Multiple meshes / material submeshes | Initial v4 path splits triangle faces by Max face material ID into separate material mesh records. Hierarchy/group semantics remain TBD. |
 | Materials and texture indices | V3/V4 format structures are partly documented by the independent reader; full SLRR material mapping TBD |
-| Normals and smoothing | V3/V4 readers know normals; old exporter references render-normal generation |
-| UV channels | Independent reader documents UV1–UV3 for v3/v4; old exporter references map channels |
+| Normals and smoothing | Initial v4 path reads per-face-corner render normals and duplicates vertices at face corners. Needs comparison with legacy smoothing behavior. |
+| UV channels | Initial v4 path reads Max map channels 1–3 where present. Legacy UV flip and map transforms still need scene fixtures. |
 | Vertex colors / emissive | Present in v3/v4 format definitions; per-version export support needs verification |
 | Skin / Physique | V4 binary contains explicit SKIN/PHYSIQUE export strings; exact weight/index encoding must be recovered |
 | Hard-surface / physical mesh | V4 entry type exists in the format reference; exporter behavior needs verification |
 | Bump-map normal / other extended attributes | Present in the v4 format pattern; importer support is incomplete, exporter support TBD |
-| Transforms, pivots, scale, hierarchy | V4 imports transform/decomposition APIs; exact exported coordinate conventions need tests |
+| Transforms, pivots, scale, hierarchy | Current prototype bakes world transforms and converts Max Z-up to SCX axes; positions are written in centimetres. Pivot/hierarchy preservation and coordinate validation remain open. |
 | Groups exporter options | Recovered UI: Group Export dialog, Frame # edit/spinner, Static Output group; output extension is .txt. The meaning and text grammar still need reference exports. |
 | Solidify modifier behavior | Separate modifier module; evaluate only after exporter baseline |
 
