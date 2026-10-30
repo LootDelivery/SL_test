@@ -22,6 +22,13 @@ namespace
             return index == 0 ? _M("scxprobe") : nullptr;
         }
 
+        BOOL SupportsOptions(int ext, DWORD options) override
+        {
+            // Advertise the Max "Export Selected" command for this extension.
+            // Unknown option bits are deliberately rejected.
+            return ext == 0 && (options & ~SCENE_EXPORT_SELECTED) == 0;
+        }
+
         const MCHAR* LongDesc() override
         {
             return _M("SCX exporter registration test (*.scxprobe)");
