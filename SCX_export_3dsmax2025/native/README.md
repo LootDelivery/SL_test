@@ -1,18 +1,24 @@
-# Native 3ds Max 2025 exporter — first build
+# Native 3ds Max 2025 exporter — current prototype
 
 This folder contains the first native x64 plug-in project for 3ds Max 2025.
 
-## What this milestone does
+## Current prototype
 
-`SCXExporterLoadTest.dle` is a registration probe. Its only purpose is to verify that:
+The native plug-in now extracts evaluated triangular meshes from 3ds Max and writes an initial SCX v4 file. It appears as **SLRR SCX v4 Exporter** with the `.scx` extension.
 
-1. Visual Studio can compile and link against the installed 3ds Max 2025 SDK.
-2. 3ds Max 2025 can load the resulting 64-bit plug-in.
-3. The exporter appears in the file-format list as **SCX Exporter Load Test**.
+The implementation currently covers:
+- evaluated triangle meshes and world-space transforms;
+- splitting faces into separate material meshes;
+- per-corner render normals (vertices are duplicated at face corners to preserve normal/UV seams);
+- UV channels 1–3 when present;
+- material name, diffuse/specular color, basic transparency, self-illumination color and specular strength;
+- bounded SCX v4 serialization and 16-bit index validation;
+- selected-node extraction through `SCENE_EXPORT_SELECTED`.
 
-It deliberately does **not** write an SCX file. If its `.scxprobe` format is selected and an export is attempted, it returns `IMPEXP_FAIL`.
+It does **not** yet export external texture indices/maps, vertex colors, skin weights, bone references, hard-surface semantics, animation, pivots or the V3 format. Material header defaults are based on the two repository fixtures, not yet proven by a controlled legacy export.
 
-The probe advertises support for 3ds Max's **Export Selected** option through `SceneExport::SupportsOptions`, so it should appear in both the regular Export and Export Selected format lists. The selected-only scene filtering is not exercised yet because this milestone does not serialize scene data.
+This is an experimental first geometry path, not a claim of full SLRR compatibility. Validate the generated file with the included inspector and in SLRR before using it in production.
+
 
 This is intentional. We are separating SDK/toolchain/load problems from the later SCX writer implementation.
 
@@ -26,7 +32,7 @@ The project expects these SDK locations:
 
 - Headers: `$(MaxSDK)\include`
 - x64 Release libraries: `$(MaxSDK)\lib\x64\Release`
-- Libraries linked by this minimal probe: `core.lib`, `maxutil.lib` and `paramblk2.lib`
+- Libraries linked by the current prototype: `core.lib`, `geom.lib`, `maxutil.lib` and `paramblk2.lib`
 
 The project targets x64, toolset v143, Unicode and the Windows SDK 10.0.19041.0.
 
@@ -43,7 +49,7 @@ The output and intermediate folders are local build artifacts and should not be 
 
 ## Loading into 3ds Max
 
-After a successful build, add the generated `bin\x64\Release` folder as an additional plug-in search path in 3ds Max, or load the `.dle` through the Plug-in Manager. Then inspect the export-format list for **SCX Exporter Load Test**.
+After a successful build, add the generated `bin\x64\Release` folder as an additional plug-in search path in 3ds Max, or load the `.dle` through the Plug-in Manager. Then inspect the export-format list for **SLRR SCX v4 Exporter**.
 
 Do not replace any existing exporter or copy this test plug-in over the old binaries.
 
