@@ -5,10 +5,9 @@
 #include "scx_scene_extractor.h"
 #include "scx_v4_writer.h"
 
-#include <filesystem>
-#include <fstream>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <limits>
 #include <string>
 #include <vector>
@@ -36,7 +35,7 @@ namespace
             std::ofstream log(logPath, std::ios::binary | std::ios::app);
             if (log)
             {
-                log << message << "\\n";
+                log << message << "\n";
             }
         }
         catch (...)
