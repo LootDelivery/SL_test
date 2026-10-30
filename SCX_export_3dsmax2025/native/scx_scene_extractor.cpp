@@ -266,12 +266,6 @@ namespace
         result.diffuse = ToColor(material->GetDiffuse(), 1.0f - transparency);
         result.specular = ToColor(material->GetSpecular());
 
-        const float specularStrength = material->GetShinStr() * 100.0f;
-        if (std::isfinite(specularStrength) && specularStrength > 0.0f)
-        {
-            result.specularIntensity = specularStrength;
-        }
-
         if (material->GetSelfIllumColorOn())
         {
             result.emissive = ToColor(material->GetSelfIllumColor());
@@ -297,22 +291,42 @@ namespace
                     std::to_string(transparencyType) + "; using subtractive");
             }
 
-            const float reflectionAmount =
-                standardMaterial->GetTexmapAmt(ID_RL, time);
-            if (standardMaterial->GetMapState(ID_RL) == 2 &&
-                std::isfinite(reflectionAmount) && reflectionAmount > 0.0f)
+            // Shader exposes the actual specular level, glossiness and
+            // self-illumination amount. These are distinct from map-slot
+            // amounts returned by GetTexmapAmt().
+            Shader* shader = standardMaterial->GetShader();
+            if (shader != nullptr)
             {
-                result.reflectionIntensity = reflectionAmount;
+                const float specularLevel = shader->GetSpecularLevel(time);
+                if (std::isfinite(specularLevel) && specularLevel > 0.0f)
+                {
+                    result.specularIntensity = specularLevel;
+                }
+
+                const float emissiveAmount = shader->GetSelfIllum(time);
+                if (std::isfinite(emissiveAmount) && emissiveAmount > 0.0f)
+                {
+                    result.emissiveIntensity = emissiveAmount;
+                }
+
+                const float glossiness = shader->GetGlossiness(time);
+                TraceExtraction(
+                    "Material '" + result.name +
+                    "': shader specularLevel=" + std::to_string(specularLevel) +
+                    ", glossiness=" + std::to_string(glossiness) +
+                    ", emissiveAmount=" + std::to_string(emissiveAmount) +
+                    ", legacyShinStr=" + std::to_string(material->GetShinStr()) +
+                    ", legacyShininess=" + std::to_string(material->GetShininess()));
+            }
+            else
+            {
+                TraceExtraction(
+                    "Material '" + result.name + "': Standard Material has no Shader interface");
             }
 
-            const float bumpAmount =
-                standardMaterial->GetTexmapAmt(ID_BU, time);
-            if (standardMaterial->GetMapState(ID_BU) == 2 &&
-                std::isfinite(bumpAmount) && bumpAmount > 0.0f)
-            {
-                result.bumpIntensity = bumpAmount;
-            }
-
+            // Reflection/Bump GetTexmapAmt values are map blend amounts, not
+            // material intensity entries. SCX v4 intensity semantics for
+            // those channels have not yet been established.
             // The reference SCX files establish these slot-to-entry mappings:
             // Diffuse -> DiffuseMap, Ambient -> DiffuseMixSecond,
             // Bump -> BumpMap, Reflection -> ReflectionMap,
