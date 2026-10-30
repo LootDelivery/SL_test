@@ -1,6 +1,6 @@
 # SCX exporter for 3ds Max 2025
 
-Статус: экспериментальный нативный экспортёр SCX v4 подключён к 3ds Max 2025 x64; первый локальный тест сборки и загрузки пройден. Сам экспорт геометрии теперь реализован в прототипе, но выходные файлы ещё предстоит проверить на реальных сценах и в SLRR. Старые файлы из `SCX_export_3dsmax5/` не изменяются.
+Статус: экспериментальный нативный экспортёр SCX v4 подключён к 3ds Max 2025 x64. Пользователь подтвердил, что простой меш, экспортированный пересобранным плагином, загружается и отображается в SLRR. Материалы и текстуры пока не подтверждены в игре. Старые файлы из `SCX_export_3dsmax5/` не изменяются.
 
 ## Что установлено по старым плагинам
 
@@ -64,4 +64,4 @@
 - A standalone SCX v3/v4 inspector and synthetic unit tests are in [tools/](tools/) and [tests/](tests/). A structural check of the two repository windshield fixtures passed: each is SCX v4 with eight records, two material blocks, two vertex blocks (38 vertices each) and two face blocks (50 triangles each).
 - The native build prerequisites and the exact local information needed next are in [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md).
 
-The native x64 plug-in now has an experimental SCX v4 geometry path: Max scene extraction, material splits, UV1–UV3, and a bounded v4 serializer. After a mesh.dll crash during Export Selected, a crash-isolation build temporarily uses flat geometric normals and writes a trace to %TEMP%\\SCXExporter_trace.log. The exact crash site remains unconfirmed until the binary minidump can be inspected. V3, external textures, Physics, skinning, Animation, Pivot, Groups, and Solidify compatibility remain in the porting scope.
+The native x64 plug-in has an experimental SCX v4 path: Max scene extraction, material splits, UV1–UV3 and a bounded v4 serializer. A simple mesh exported by the rebuilt plugin has been loaded in SLRR. Standard Material direct BitmapTex slots are now extracted for Diffuse, Ambient, Bump, Reflection and Self-Illumination; a `.tex` sidecar is written for modders and does not affect the SCX or game loading. Material-header flags, nested maps and in-game texture rendering still need validation. After an earlier mesh.dll crash during Export Selected, the diagnostic build temporarily uses flat geometric normals and writes a trace to %TEMP%\\SCXExporter_trace.log. The exact crash site remains unconfirmed until the binary minidump can be inspected. V3, Physics, skinning, Animation, Pivot, Groups, and Solidify compatibility remain in the porting scope.
