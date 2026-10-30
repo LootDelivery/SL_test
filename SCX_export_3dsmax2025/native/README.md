@@ -47,6 +47,26 @@ After a successful build, add the generated `bin\x64\Release` folder as an addit
 
 Do not replace any existing exporter or copy this test plug-in over the old binaries.
 
+## Current format core
+
+The project now includes a format-independent SCX scene model (`scx_scene.h`) and a first SCX v4 serializer (`scx_v4_writer.cpp` / `scx_v4_writer.h`).
+
+The writer emits the currently understood v4 record sequence for each material mesh:
+
+1. Material definition (type 0)
+2. Hard-surface record (type 1)
+3. Vertex channel block (type 4)
+4. 16-bit triangle index block (type 5)
+
+It validates finite vertex data, triangle-index ranges, per-mesh 16-bit vertex addressing and file-offset bounds before serialization. It supports positions, normals, vertex color, emissive, UV1–UV3, bump normals, material color entries and material map records.
+
+Important limitations, explicitly retained rather than guessed:
+
+- The material header values 0x33 and 2.0, and the hard-surface payload 0, are defaults observed in the repository's windshield fixtures. Their complete semantics are not established yet.
+- The writer has not yet been checked against a controlled export from the old Invictus exporter or loaded in SLRR.
+- The writer is not yet connected to Max scene extraction. `DoExport` remains a deliberate registration-test stub until the extraction pipeline is ready.
+- SCX v3 uses a different sequential record layout and will get a separate serializer.
+
 ## Next milestone
 
-After the test exporter loads, we will replace the probe implementation with shared scene extraction and then build the SCX v3/v4 serializers. This test project is not the final exporter.
+Connect 3ds Max evaluated mesh data to the shared scene model, preserving material splits, face-corner normals and mapping channels. Then wire `WriteV4` into the export plug-in after validation with fixture-based round-trip tests.
