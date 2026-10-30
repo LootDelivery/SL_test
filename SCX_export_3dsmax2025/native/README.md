@@ -57,7 +57,7 @@ Include path: $(MaxSDK)\include
 
 Library path: $(MaxSDK)\lib\x64\Release
 
-The project links core.lib, geom.lib, maxutil.lib and paramblk2.lib.
+The project links core.lib, geom.lib, mesh.lib, maxutil.lib and paramblk2.lib.
 
 ## Build
 
