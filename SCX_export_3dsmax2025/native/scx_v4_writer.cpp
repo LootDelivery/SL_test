@@ -32,11 +32,8 @@ namespace
     constexpr std::uint32_t kMaterialBumpIntensity = 0x01000002;
     constexpr std::uint32_t kMaterialName = 0x08000000;
 
-    // Values observed in the repository's real SCX v4 windshield fixtures.
-    // Their complete semantics are not yet known; retain them as defaults
-    // until controlled exports from the legacy exporter can be compared.
+    // The material flags are still fixture-derived and not fully decoded.
     constexpr std::uint32_t kObservedMaterialFlags = 0x33;
-    constexpr float kObservedMaterialReservedFloat = 2.0f;
 
     bool FitsU32(std::size_t value)
     {
@@ -132,7 +129,7 @@ namespace
         entryCount += static_cast<std::uint32_t>(material.maps.size());
 
         PutU32(payload, kObservedMaterialFlags);
-        PutF32(payload, kObservedMaterialReservedFloat);
+        PutF32(payload, static_cast<float>(material.transparencyType));
         PutU32(payload, entryCount);
 
         PutU32(payload, kMaterialName);
@@ -402,6 +399,12 @@ namespace
                     error = prefix + "contains a non-finite material map transform.";
                     return false;
                 }
+            }
+
+            if (mesh.material.transparencyType > 2)
+            {
+                error = prefix + "contains an unsupported Standard Material transparency mode.";
+                return false;
             }
 
             if ((mesh.material.specularIntensity && !IsFinite(*mesh.material.specularIntensity)) ||
