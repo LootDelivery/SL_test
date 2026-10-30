@@ -26,7 +26,7 @@ This matrix distinguishes verified clues from features that still require contro
 | Group-aware export | Dedicated Groups exporter exists; semantics and output contract TBD |
 | Multiple meshes / material submeshes | Initial v4 path splits triangle faces by Max face material ID into separate material mesh records. Hierarchy/group semantics remain TBD. |
 | Materials and texture indices | V3/V4 format structures are partly documented by the independent reader; full SLRR material mapping TBD |
-| Normals and smoothing | Initial v4 path reads per-face-corner render normals and duplicates vertices at face corners. Needs comparison with legacy smoothing behavior. |
+| Normals and smoothing | Crash-isolation build temporarily computes flat face normals from world-space triangle positions to avoid the earlier mesh.dll crash path. Per-corner smoothing/render normals are deferred until dump/trace analysis. |
 | UV channels | Initial v4 path reads Max map channels 1–3 where present. Legacy UV flip and map transforms still need scene fixtures. |
 | Vertex colors / emissive | Present in v3/v4 format definitions; per-version export support needs verification |
 | Skin / Physique | V4 binary contains explicit SKIN/PHYSIQUE export strings; exact weight/index encoding must be recovered |
