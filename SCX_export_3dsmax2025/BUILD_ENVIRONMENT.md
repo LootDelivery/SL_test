@@ -34,9 +34,9 @@ The user confirmed that the SDK is installed and its headers, libraries, samples
 
 Confirmed SDK root:
 
-`C:\\Program Files\\Autodesk\\3ds Max 2025 SDK\\maxsdk`
+`C:\Program Files\\Autodesk\\3ds Max 2025 SDK\\maxsdk`
 
-The native starter project in `native/` is configured to use this exact path. It expects headers under `include` and x64 Release libraries under `lib\\x64\\Release`.
+The native starter project in `native/` is configured to use this exact path. It expects headers under `include` and x64 Release libraries under `lib\x64\Release`.
 
 ## What we will build
 
