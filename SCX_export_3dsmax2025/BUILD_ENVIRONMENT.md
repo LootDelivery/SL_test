@@ -1,42 +1,48 @@
 # Build environment: 3ds Max 2025 exporter
 
-This project targets a native 64-bit 3ds Max 2025 SceneExport plug-in.
+## Confirmed local setup
 
-## Official requirements
+The user has installed and confirmed:
 
-Autodesk's SDK requirements table for 3ds Max 2025 specifies:
-
-- 3ds Max 2025 SDK
-- Microsoft Visual Studio 2022, baseline version 17.8.3
-- C++ Platform Toolset v143
-- Windows Platform SDK 10.0.19041.0
-
-Reference: [Autodesk SDK Requirements](https://help.autodesk.com/cloudhelp/2026/ENU/MAXDEV-Developer/files/about_the_3ds_max_sdk/sdk_requirements.html).
-
-The 3ds Max SDK is a separate developer package. Autodesk's current download instructions point to the [3ds Max API / SDKs and tools page](https://aps.autodesk.com/developer/overview/3ds-max-api).
-
-## Confirmed Visual Studio toolchain
-
-The user installed Visual Studio 2022, the MSVC v143 14.38–17.8 x64/x86 toolset, and Windows SDK 10.0.19041.0. The first native x64 plug-in compiled and loaded in 3ds Max 2025 successfully. No reinstall is needed unless a later compiler/linker error identifies a missing component.
-
-## Confirmed 3ds Max SDK installation
-
-The user confirmed that the SDK is installed and its headers, libraries, samples and additional directories are present.
+- Visual Studio 2022.
+- MSVC v143 x64/x86 toolset (14.38–17.8).
+- Windows SDK 10.0.19041.0.
+- 3ds Max 2025 SDK.
 
 Confirmed SDK root:
 
-`C:\Program Files\\Autodesk\\3ds Max 2025 SDK\\maxsdk`
+`C:\Program Files\Autodesk\3ds Max 2025 SDK\maxsdk`
 
-The native starter project in `native/` is configured to use this exact path. It expects headers under `include` and x64 Release libraries under `lib\x64\Release`.
+The SDK headers are under `include`; x64 Release libraries are under `lib\x64\Release`.
 
-## What we will build
+## Project configuration
 
-The first native plug-in will be a small 64-bit SceneExport module that only registers in Max and reports its version. It will not write or modify any SCX data. Once it loads successfully in Max 2025, we will add the shared scene-reading layer and the version-specific SCX serializers.
+The solution is `native/SCXExporterLoadTest.sln`. The project is configured for:
 
-This staged build is intentional: it isolates SDK/toolchain problems from file-format problems. The actual exporter features will be added after the loader test succeeds.
+- 3ds Max 2025 x64.
+- Visual Studio 2022 / Platform Toolset v143.
+- Windows SDK 10.0.19041.0.
+- C++17 and Unicode.
+- SDK include path `$(MaxSDK)\include`.
+- SDK library path `$(MaxSDK)\lib\x64\Release`.
 
-## First local build
+The current project links `core.lib`, `geom.lib`, `mesh.lib`, `maxutil.lib` and `paramblk2.lib`. The Max SDK documentation identifies `mesh.lib` as the library required by plug-ins using the Mesh class and `geom.lib` for geometry plug-ins.
 
-The user has confirmed installation of the required MSVC v143 toolset and Windows SDK 10.0.19041.0, and has supplied the SDK root path above. A minimal native x64 SceneExport registration project is now provided in `native/SCXExporterLoadTest.sln`.
+## Local build
 
-The first build is a registration-only probe. It intentionally does not write SCX data; see `native/README.md` for the purpose and expected output.
+The user has already confirmed that the initial registration-only plug-in compiled and loaded in 3ds Max 2025. The project has since been extended with the experimental SCX v4 scene extractor and serializer, so the latest branch must be downloaded before rebuilding.
+
+From Visual Studio:
+
+1. Open `native/SCXExporterLoadTest.sln`.
+2. Select `Debug` and `x64` (or `Release` and `x64`).
+3. Choose **Build → Rebuild Solution**.
+4. The output should be `native\bin\x64\<Configuration>\SCXExporterLoadTest.dle`.
+
+The code has not been compiled against the user's local Max SDK after the scene extractor was added. Treat compiler output from the next rebuild as the authoritative compatibility check.
+
+## Current export scope
+
+The plug-in now includes an experimental SCX v4 geometry path. It extracts evaluated triangular meshes, material splits, corner normals and UV channels, then writes an SCX v4 file.
+
+The current implementation is not a complete port of the old exporter. SCX v3, external texture indices/maps, vertex colors, skinning/Physique, physical-mesh semantics, animation, pivot options, TNL optimization, Groups text export and Solidify compatibility remain to be implemented and validated. See `native/README.md` and `FEATURE_MATRIX.md`.
