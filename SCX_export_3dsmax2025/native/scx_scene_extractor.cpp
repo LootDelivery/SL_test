@@ -214,9 +214,11 @@ namespace
             return;
         }
 
+        // Normals use the inverse-transpose of the object-to-world matrix.
+        // AffineTranspose alone only transposes; it does not invert the matrix.
         const Matrix3 objectTM = node->GetObjTMAfterWSM(time);
-        Matrix3 normalTM;
-        AffineTranspose(normalTM, objectTM);
+        const Matrix3 inverseObjectTM = Inverse(objectTM);
+        const Matrix3 normalTM = AffineTranspose(inverseObjectTM);
 
         TriObject* triObject = static_cast<TriObject*>(
             evaluatedObject->ConvertToType(time, Class_ID(TRIOBJ_CLASS_ID, 0)));
