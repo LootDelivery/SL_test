@@ -340,9 +340,9 @@ namespace scx
             return false;
         }
 
-        // SCX v4 positions are read by independent tooling as file-units / 100.
-        // Store Max centimetres * 100, after the Z-up Max to Y-up SCX axis map.
-        const double fileUnitsPerMaxUnit = centimetresPerSystemUnit * 100.0;
+        // SCX positions are centimetres; the independent reader divides by 100
+        // to convert them to metres. Convert Max system units to centimetres.
+        const double fileUnitsPerMaxUnit = centimetresPerSystemUnit;
         const TimeValue time = ip.GetTime();
 
         std::vector<INode*> nodes;
