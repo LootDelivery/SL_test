@@ -50,9 +50,11 @@ namespace scx
         Color8 diffuse{ 255, 255, 255, 255 };
         std::optional<Color8> specular;
         std::optional<Color8> emissive;
+        // SCX v4 intensity entries confirmed against FL_seat.scx/F_bumper.scx:
+        // 0x01000000 = diffuse, 0x01000001 = specular, 0x01000002 = emissive.
+        std::optional<float> diffuseIntensity;
         std::optional<float> specularIntensity;
-        std::optional<float> reflectionIntensity;
-        std::optional<float> bumpIntensity;
+        std::optional<float> emissiveIntensity;
         std::vector<MaterialMap> maps;
     };
 
