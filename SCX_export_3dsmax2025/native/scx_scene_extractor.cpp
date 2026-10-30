@@ -4,6 +4,7 @@
 #include <triobj.h>
 #include <units.h>
 #include <stdmat.h>
+#include <shaders.h>
 
 #include <algorithm>
 #include <cmath>
