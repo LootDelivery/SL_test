@@ -2,6 +2,15 @@
 #include <iparamb2.h>
 #include <impexp.h>
 
+#include "scx_scene_extractor.h"
+#include "scx_v4_writer.h"
+
+#include <filesystem>
+#include <fstream>
+#include <limits>
+#include <string>
+#include <vector>
+
 namespace
 {
     // A dedicated ID for this temporary load-test exporter.
@@ -19,7 +28,7 @@ namespace
 
         const MCHAR* Ext(int index) override
         {
-            return index == 0 ? _M("scxprobe") : nullptr;
+            return index == 0 ? _M("scx") : nullptr;
         }
 
         BOOL SupportsOptions(int ext, DWORD options) override
@@ -31,12 +40,12 @@ namespace
 
         const MCHAR* LongDesc() override
         {
-            return _M("SCX exporter registration test (*.scxprobe)");
+            return _M("SLRR SCX v4 Exporter prototype (*.scx)");
         }
 
         const MCHAR* ShortDesc() override
         {
-            return _M("SCX Exporter Load Test");
+            return _M("SLRR SCX v4 Exporter");
         }
 
         const MCHAR* AuthorName() override
@@ -70,14 +79,84 @@ namespace
         }
 
         int DoExport(
-            const MCHAR*,
+            const MCHAR* fileName,
             ExpInterface*,
-            Interface*,
-            BOOL,
-            DWORD) override
+            Interface* ip,
+            BOOL suppressPrompts,
+            DWORD options) override
         {
-            // Intentionally do not write a file in this milestone.
-            return IMPEXP_FAIL;
+            const auto reportError = [suppressPrompts](const std::string& message)
+            {
+                OutputDebugStringA(("SLRR SCX exporter: " + message + "\\n").c_str());
+                if (!suppressPrompts)
+                {
+                    MessageBoxA(
+                        GetCOREInterface()->GetMAXHWnd(),
+                        message.c_str(),
+                        "SLRR SCX v4 Exporter",
+                        MB_OK | MB_ICONERROR);
+                }
+            };
+
+            if (fileName == nullptr || fileName[0] == 0 || ip == nullptr)
+            {
+                reportError("Invalid export file name or 3ds Max interface.");
+                return IMPEXP_FAIL;
+            }
+
+            scx::Scene scene;
+            std::string error;
+            const bool selectedOnly = (options & SCENE_EXPORT_SELECTED) != 0;
+            if (!scx::ExtractMaxScene(*ip, selectedOnly, scene, error))
+            {
+                reportError(error);
+                return IMPEXP_FAIL;
+            }
+
+            std::vector<std::uint8_t> bytes;
+            if (!scx::WriteV4(scene, bytes, error))
+            {
+                reportError(error);
+                return IMPEXP_FAIL;
+            }
+
+            if (bytes.size() > static_cast<std::size_t>((std::numeric_limits<std::streamsize>::max)()))
+            {
+                reportError("The generated SCX file is too large for the current output stream.");
+                return IMPEXP_FAIL;
+            }
+
+            try
+            {
+                const std::filesystem::path outputPath(fileName);
+                std::ofstream outputFile(
+                    outputPath,
+                    std::ios::binary | std::ios::trunc);
+
+                if (!outputFile)
+                {
+                    reportError("Could not open the output file for writing.");
+                    return IMPEXP_FAIL;
+                }
+
+                outputFile.write(
+                    reinterpret_cast<const char*>(bytes.data()),
+                    static_cast<std::streamsize>(bytes.size()));
+                outputFile.close();
+
+                if (!outputFile)
+                {
+                    reportError("An error occurred while writing the SCX file.");
+                    return IMPEXP_FAIL;
+                }
+            }
+            catch (const std::exception& exception)
+            {
+                reportError(std::string("File output failed: ") + exception.what());
+                return IMPEXP_FAIL;
+            }
+
+            return IMPEXP_SUCCESS;
         }
     };
 
@@ -96,7 +175,7 @@ namespace
 
         const MCHAR* ClassName() override
         {
-            return _M("SCX Exporter Load Test");
+            return _M("SLRR SCX v4 Exporter");
         }
 
         SClass_ID SuperClassID() override
@@ -116,7 +195,7 @@ namespace
 
         const MCHAR* NonLocalizedClassName() override
         {
-            return _M("SCX Exporter Load Test");
+            return _M("SLRR SCX v4 Exporter");
         }
 
         const MCHAR* InternalName() override
@@ -148,7 +227,7 @@ extern "C"
 {
     __declspec(dllexport) const MCHAR* LibDescription()
     {
-        return _M("SCX Exporter Load Test for 3ds Max 2025");
+        return _M("SLRR SCX v4 Exporter prototype for 3ds Max 2025");
     }
 
     __declspec(dllexport) int LibNumberClasses()
