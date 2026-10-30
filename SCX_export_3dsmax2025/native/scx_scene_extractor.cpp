@@ -3,9 +3,12 @@
 #include <max.h>
 #include <triobj.h>
 #include <units.h>
+#include <stdmat.h>
+#include <bmtex.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cctype>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -90,7 +93,146 @@ namespace
         };
     }
 
-    scx::Material ExtractMaterial(Mtl* material, const std::string& fallbackName)
+    std::string NormalizeTexturePath(const std::string& path)
+    {
+        std::string normalized = path;
+        for (char& character : normalized)
+        {
+            if (character == '\\')
+            {
+                character = '/';
+            }
+            character = static_cast<char>(
+                std::tolower(static_cast<unsigned char>(character)));
+        }
+        return normalized;
+    }
+
+    std::uint32_t RegisterTexturePath(scx::Scene& scene, const std::string& path)
+    {
+        const std::string key = NormalizeTexturePath(path);
+        for (std::size_t index = 0; index < scene.texturePaths.size(); ++index)
+        {
+            if (NormalizeTexturePath(scene.texturePaths[index]) == key)
+            {
+                return static_cast<std::uint32_t>(index);
+            }
+        }
+
+        const std::uint32_t index = static_cast<std::uint32_t>(scene.texturePaths.size());
+        scene.texturePaths.push_back(path);
+        return index;
+    }
+
+    void AddStandardBitmapMap(
+        Mtl* material,
+        StdMat2* standardMaterial,
+        int standardMapSlot,
+        scx::MaterialMapEntry entry,
+        bool environmentMap,
+        TimeValue time,
+        scx::Scene& scene,
+        scx::Material& outputMaterial)
+    {
+        const int mapState = standardMaterial->GetMapState(standardMapSlot);
+        if (mapState != 2)
+        {
+            if (mapState == 1)
+            {
+                TraceExtraction(
+                    "Material '" + outputMaterial.name + "': map slot " +
+                    std::to_string(standardMapSlot) + " is present but disabled");
+            }
+            return;
+        }
+
+        Texmap* textureMap = material->GetSubTexmap(standardMapSlot);
+        if (textureMap == nullptr)
+        {
+            TraceExtraction(
+                "Material '" + outputMaterial.name + "': active map slot " +
+                std::to_string(standardMapSlot) + " has no Texmap object");
+            return;
+        }
+
+        if (textureMap->ClassID() != Class_ID(BMTEX_CLASS_ID, 0))
+        {
+            TraceExtraction(
+                "Material '" + outputMaterial.name + "': map slot " +
+                std::to_string(standardMapSlot) +
+                " is not a direct BitmapTex; skipped");
+            return;
+        }
+
+        BitmapTex* bitmap = static_cast<BitmapTex*>(textureMap);
+        const std::string texturePath = ToUtf8(bitmap->GetMapName());
+        if (texturePath.empty())
+        {
+            TraceExtraction(
+                "Material '" + outputMaterial.name + "': BitmapTex slot " +
+                std::to_string(standardMapSlot) + " has an empty path; skipped");
+            return;
+        }
+
+        scx::MaterialMap map;
+        map.entry = entry;
+        map.textureIndex = RegisterTexturePath(scene, texturePath);
+
+        StdUVGen* uvGenerator = bitmap->GetUVGen();
+        if (uvGenerator != nullptr)
+        {
+            // SCX stores ordinary mesh UV channels as zero-based indices:
+            // Max channel 1 corresponds to SCX channel 0 in the reference files.
+            if (environmentMap)
+            {
+                // FL_seat.scx and F_bumper.scx both use 0xFFFFFFFE (-2)
+                // for reflection/environment maps rather than a mesh UV set.
+                map.mapChannel = 0xFFFFFFFEu;
+            }
+            else
+            {
+                const int maxMapChannel = uvGenerator->GetMapChannel();
+                const int scxMapChannel =
+                    maxMapChannel >= 1 ? maxMapChannel - 1 : maxMapChannel;
+                map.mapChannel = static_cast<std::uint32_t>(
+                    static_cast<std::int32_t>(scxMapChannel));
+            }
+
+            map.tilingFlags = static_cast<std::uint32_t>(
+                uvGenerator->GetTextureTiling());
+            map.tiling = {
+                uvGenerator->GetUScl(time),
+                uvGenerator->GetVScl(time)
+            };
+            map.offset = {
+                uvGenerator->GetUOffs(time),
+                uvGenerator->GetVOffs(time)
+            };
+        }
+        else if (environmentMap)
+        {
+            map.mapChannel = 0xFFFFFFFEu;
+        }
+
+        outputMaterial.maps.push_back(map);
+
+        TraceExtraction(
+            "Material '" + outputMaterial.name + "': SCX map 0x" +
+            [&entry]() {
+                char value[9] = {};
+                std::snprintf(value, sizeof(value), "%08X",
+                    static_cast<unsigned int>(entry));
+                return std::string(value);
+            }() +
+            " -> texture[" + std::to_string(map.textureIndex) + "] " + texturePath +
+            ", channel=" + std::to_string(static_cast<std::int32_t>(map.mapChannel)));
+    }
+
+    scx::Material ExtractMaterial(
+        Mtl* material,
+        const std::string& fallbackName,
+        TimeValue time,
+        scx::Scene& scene)
     {
         scx::Material result;
         result.name = fallbackName.empty() ? "Default" : fallbackName;
@@ -121,9 +263,37 @@ namespace
             result.emissive = ToColor(material->GetSelfIllumColor());
         }
 
-        // Texture-map enumeration is deliberately deferred. SLRR uses
-        // external .tex indices and map-channel metadata; guessing indices
-        // from Max texture slots would silently create broken materials.
+        if (material->ClassID() == Class_ID(DMTL_CLASS_ID, 0))
+        {
+            StdMat2* standardMaterial = static_cast<StdMat2*>(material);
+
+            // The reference SCX files establish these slot-to-entry mappings:
+            // Diffuse -> DiffuseMap, Ambient -> DiffuseMixSecond,
+            // Bump -> BumpMap, Reflection -> ReflectionMap,
+            // Self-Illumination -> EmissiveMap.
+            AddStandardBitmapMap(
+                material, standardMaterial, ID_DI,
+                scx::MaterialMapEntry::Diffuse, false, time, scene, result);
+            AddStandardBitmapMap(
+                material, standardMaterial, ID_AM,
+                scx::MaterialMapEntry::DiffuseMixSecond, false, time, scene, result);
+            AddStandardBitmapMap(
+                material, standardMaterial, ID_BU,
+                scx::MaterialMapEntry::Bump, false, time, scene, result);
+            AddStandardBitmapMap(
+                material, standardMaterial, ID_RL,
+                scx::MaterialMapEntry::Reflection, true, time, scene, result);
+            AddStandardBitmapMap(
+                material, standardMaterial, ID_SI,
+                scx::MaterialMapEntry::Emissive, false, time, scene, result);
+        }
+        else
+        {
+            TraceExtraction(
+                "Material '" + result.name +
+                "' is not a 3ds Max Standard Material; texture slots were not read");
+        }
+
         return result;
     }
 
@@ -355,7 +525,7 @@ namespace
             if (!bucket.initialized)
             {
                 Mtl* faceMaterial = GetFaceMaterial(nodeMaterial, materialId);
-                bucket.material = ExtractMaterial(faceMaterial, nodeName);
+                bucket.material = ExtractMaterial(faceMaterial, nodeName, time, scene);
                 bucket.current.name = nodeName;
                 bucket.current.material = bucket.material;
                 bucket.initialized = true;
@@ -438,6 +608,7 @@ namespace scx
         std::string& error)
     {
         output.meshes.clear();
+        output.texturePaths.clear();
         error.clear();
         TraceExtraction(selectedOnly ? "Extraction: selected-only started" : "Extraction: full-scene started");
 
