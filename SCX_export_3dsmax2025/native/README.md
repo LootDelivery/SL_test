@@ -13,8 +13,9 @@ It is exposed in the 3ds Max Export and Export Selected workflows as **SLRR SCX 
 - Converts Max Z-up coordinates to the SCX coordinate basis.
 - Writes positions in centimetres; the known independent reader converts these to metres by dividing by 100.
 - Splits faces by material ID and creates separate SCX mesh records.
-- Duplicates vertices per face corner to preserve render-normal and UV seams.
-- Reads render normals and mapping channels 1–3.
+- Duplicates vertices per face corner to preserve UV seams.
+- Reads UV mapping channels 1–3 when map-face and map-vertex arrays are present.
+- Currently emits flat geometric face normals as a temporary crash-isolation measure; smoothing-group normals are not yet enabled.
 - Reads basic material data: name, diffuse and specular colors, transparency, self-illumination color and specular strength.
 - Splits generated meshes before the 16-bit SCX v4 vertex-index limit.
 - Writes the SCX v4 header table and record blocks with bounds checks.
