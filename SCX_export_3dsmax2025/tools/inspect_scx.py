@@ -104,11 +104,13 @@ def parse_v3(data: bytes) -> dict[str, Any]:
         # Check every float for NaN/Inf. The per-vertex channel layout follows
         # the public v3 reader: position, normal, UV1, UV2, BGRA color; for
         # extended materials an extra 20-byte UV3/unknown payload is present.
-        float_count = 10 if stride == 44 else 12
+        float_offsets = list(range(0, 40, 4))
+        if stride == 64:
+            float_offsets.extend((48, 52))  # UV3; bytes 40..47 and 56..59 are opaque.
         for vertex_index in range(vertex_count):
             base = cursor + vertex_index * stride
-            for float_index in range(float_count):
-                read_f32(data, base + float_index * 4, f"v3 vertex {vertex_index}")
+            for float_offset in float_offsets:
+                read_f32(data, base + float_offset, f"v3 vertex {vertex_index}")
         cursor += vertex_bytes
 
         face_count = read_u32(data, cursor, "v3 face count")
