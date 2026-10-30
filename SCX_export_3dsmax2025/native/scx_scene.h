@@ -45,6 +45,8 @@ namespace scx
     struct Material
     {
         std::string name = "Default";
+        // Standard Material transparency mode: 0=subtractive, 1=additive, 2=filter.
+        std::uint32_t transparencyType = 0;
         Color8 diffuse{ 255, 255, 255, 255 };
         std::optional<Color8> specular;
         std::optional<Color8> emissive;
