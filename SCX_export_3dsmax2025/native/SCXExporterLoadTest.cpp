@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <exception>
+#include <filesystem>
 #include <limits>
 #include <string>
 #include <vector>
@@ -18,6 +19,31 @@ namespace
     const Class_ID kScxExporterLoadTestClassId(0x5B7C19A3, 0x3E6D48F1);
 
     HINSTANCE g_moduleInstance = nullptr;
+
+    void TraceExport(const std::string& message)
+    {
+        wchar_t tempPath[MAX_PATH] = {};
+        const DWORD length = GetTempPathW(MAX_PATH, tempPath);
+        if (length == 0 || length >= MAX_PATH)
+        {
+            return;
+        }
+
+        try
+        {
+            std::filesystem::path logPath(tempPath);
+            logPath /= L"SCXExporter_trace.log";
+            std::ofstream log(logPath, std::ios::binary | std::ios::app);
+            if (log)
+            {
+                log << message << "\\n";
+            }
+        }
+        catch (...)
+        {
+            // Diagnostics must never interfere with the exporter itself.
+        }
+    }
 
     class ScxExporterLoadTest final : public SceneExport
     {
@@ -108,18 +134,25 @@ namespace
             scx::Scene scene;
             std::string error;
             const bool selectedOnly = (options & SCENE_EXPORT_SELECTED) != 0;
+            TraceExport(selectedOnly ? "DoExport: selected-only" : "DoExport: full scene");
+            TraceExport("DoExport: begin ExtractMaxScene");
             if (!scx::ExtractMaxScene(*ip, selectedOnly, scene, error))
             {
+                TraceExport("DoExport: ExtractMaxScene failed: " + error);
                 reportError(error);
                 return IMPEXP_FAIL;
             }
+            TraceExport("DoExport: ExtractMaxScene succeeded; chunks=" + std::to_string(scene.meshes.size()));
 
             std::vector<std::uint8_t> bytes;
+            TraceExport("DoExport: begin WriteV4");
             if (!scx::WriteV4(scene, bytes, error))
             {
+                TraceExport("DoExport: WriteV4 failed: " + error);
                 reportError(error);
                 return IMPEXP_FAIL;
             }
+            TraceExport("DoExport: WriteV4 succeeded; bytes=" + std::to_string(bytes.size()));
 
             if (bytes.size() > static_cast<std::size_t>((std::numeric_limits<std::streamsize>::max)()))
             {
@@ -157,6 +190,7 @@ namespace
                 return IMPEXP_FAIL;
             }
 
+            TraceExport("DoExport: completed successfully");
             return IMPEXP_SUCCESS;
         }
     };
