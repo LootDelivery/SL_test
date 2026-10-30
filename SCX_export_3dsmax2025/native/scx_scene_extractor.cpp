@@ -287,7 +287,7 @@ namespace
 
         if (deleteTriObject)
         {
-            triObject->DeleteMe();
+            triObject->DeleteThis();
         }
 
         for (auto& pair : buckets)
