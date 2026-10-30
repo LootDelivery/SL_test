@@ -12,6 +12,8 @@ This folder contains the first native x64 plug-in project for 3ds Max 2025.
 
 It deliberately does **not** write an SCX file. If its `.scxprobe` format is selected and an export is attempted, it returns `IMPEXP_FAIL`.
 
+The probe advertises support for 3ds Max's **Export Selected** option through `SceneExport::SupportsOptions`, so it should appear in both the regular Export and Export Selected format lists. The selected-only scene filtering is not exercised yet because this milestone does not serialize scene data.
+
 This is intentional. We are separating SDK/toolchain/load problems from the later SCX writer implementation.
 
 ## SDK path configured
