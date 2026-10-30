@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.inspect_scx import ScxFormatError, inspect_scx
+from SCX_export_3dsmax2025.tools.inspect_scx import ScxFormatError, inspect_scx
 
 
 def u32(value: int) -> bytes:
