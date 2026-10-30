@@ -15,18 +15,9 @@ Reference: [Autodesk SDK Requirements](https://help.autodesk.com/cloudhelp/2026/
 
 The 3ds Max SDK is a separate developer package. Autodesk's current download instructions point to the [3ds Max API / SDKs and tools page](https://aps.autodesk.com/developer/overview/3ds-max-api).
 
-## Check Visual Studio before installing anything
+## Confirmed Visual Studio toolchain
 
-Do not uninstall Visual Studio or change its version yet. First inspect the current installation.
-
-1. Open **Visual Studio Installer** from the Windows Start menu.
-2. Find the installed **Visual Studio 2022** entry and click **Modify**.
-3. Open the **Workloads** tab. Check whether **Desktop development with C++** is selected.
-4. Open **Individual components**.
-5. Search for MSVC v143. Check whether the VS 2022 x64/x86 C++ build tools are installed. The Autodesk baseline is the v14.38 / VS 17.8 toolset.
-6. Search for 10.0.19041.0. Check whether **Windows 10 SDK (10.0.19041.0)** is installed.
-
-If any component is missing, do not guess which similarly named component to select. Send a screenshot of the filtered component list first; we can identify the exact item. The installer can retain multiple toolsets side by side, so a newer Visual Studio installation does not automatically mean it must be replaced.
+The user installed Visual Studio 2022, the MSVC v143 14.38–17.8 x64/x86 toolset, and Windows SDK 10.0.19041.0. The first native x64 plug-in compiled and loaded in 3ds Max 2025 successfully. No reinstall is needed unless a later compiler/linker error identifies a missing component.
 
 ## Confirmed 3ds Max SDK installation
 
