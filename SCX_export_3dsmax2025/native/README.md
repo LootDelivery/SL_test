@@ -34,6 +34,17 @@ It is exposed in the 3ds Max Export and Export Selected workflows as **SLRR SCX 
 
 These are still in the porting scope. The current v4 output is a first geometry prototype, not a claim of full legacy compatibility.
 
+## Crash-isolation build
+
+The first Export Selected test crashed in `mesh.dll` with an access violation. The exact failing call is not yet proven because the GitHub-hosted minidump is binary and could not be decoded by the repository connector.
+
+The current diagnostic build:
+- avoids `Mesh::ComputeRenderNormal` and calculates a temporary flat geometric normal from transformed triangle positions;
+- verifies map-face and map-vertex counts before reading UV arrays;
+- writes stage markers to `%TEMP%\\SCXExporter_trace.log`, including evaluated-object conversion, mesh counts, face progress and serialization stages.
+
+This is a temporary diagnostic configuration, not the final normal/smoothing implementation. Do not use its flat-shaded output as a production export.
+
 ## Important format assumptions still requiring reference exports
 
 The two repository windshield fixtures use material-header values 0x33 and 2.0, and a hard-surface payload of 0. The prototype preserves these observed values as defaults, but their full meaning is not established. They must be compared against controlled files exported by the original Invictus V4 plugin before being treated as confirmed format rules.
