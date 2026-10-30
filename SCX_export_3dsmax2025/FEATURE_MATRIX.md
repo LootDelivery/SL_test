@@ -22,10 +22,10 @@ This matrix distinguishes verified clues from features that still require contro
 | Capability | Evidence / current status |
 |---|---|
 | SCX v3 output | Dedicated V3 exporter exists; exact output behavior to be tested |
-| SCX v4 output | Experimental C++ v4 writer is connected to Max evaluated triangular meshes; includes material splits, corner normals, UV1–UV3 and base material properties. No legacy-export comparison or in-game validation yet. |
+| SCX v4 output | Experimental C++ v4 writer is connected to Max evaluated triangular meshes. User has confirmed that a simple mesh exported by the rebuilt plugin loads and displays in SLRR. Materials/textures remain unvalidated in-game. |
 | Group-aware export | Dedicated Groups exporter exists; semantics and output contract TBD |
 | Multiple meshes / material submeshes | Initial v4 path splits triangle faces by Max face material ID into separate material mesh records. Hierarchy/group semantics remain TBD. |
-| Materials and texture indices | V3/V4 format structures are partly documented by the independent reader; full SLRR material mapping TBD |
+| Materials and texture indices | Experimental Standard Material support now reads direct BitmapTex slots: Diffuse, Ambient (SCX DiffuseMixSecond), Bump, Reflection and Self-Illumination. Texture paths are deduplicated by first use; indices are serialized into SCX and written to an informational `.tex` sidecar. Nested/procedural maps and material-header flags remain unresolved; in-game material rendering still needs testing. |
 | Normals and smoothing | Crash-isolation build temporarily computes flat face normals from world-space triangle positions to avoid the earlier mesh.dll crash path. Per-corner smoothing/render normals are deferred until dump/trace analysis. |
 | UV channels | Initial v4 path reads Max map channels 1–3 where present. Legacy UV flip and map transforms still need scene fixtures. |
 | Vertex colors / emissive | Present in v3/v4 format definitions; per-version export support needs verification |
@@ -35,6 +35,10 @@ This matrix distinguishes verified clues from features that still require contro
 | Transforms, pivots, scale, hierarchy | Current prototype bakes world transforms and converts Max Z-up to SCX axes; positions are written in centimetres. Pivot/hierarchy preservation and coordinate validation remain open. |
 | Groups exporter options | Recovered UI: Group Export dialog, Frame # edit/spinner, Static Output group; output extension is .txt. The meaning and text grammar still need reference exports. |
 | Solidify modifier behavior | Separate modifier module; evaluate only after exporter baseline |
+
+## Material reference fixtures
+
+The root-level `FL_seat.scx` and `F_bumper.scx` files provide additional SCX v4 material examples. In `FL_seat.scx`, material map index 0 resolves to `interior.dds` and index 1 to `general_env_map.png` (based on the supplied texture order); diffuse/ambient layer entries use channel 0, while reflection entries use channel `0xFFFFFFFE` (-2). The material-header flags vary between materials, so the prototype's old constant 0x33 is not a verified universal value.
 
 ## Reference implementation caveat
 
